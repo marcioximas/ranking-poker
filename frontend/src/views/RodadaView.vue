@@ -73,7 +73,7 @@
   </div>
 
   <!-- Start Round Modal -->
-  <BaseModal v-if="showStartModal" @close="showStartModal = false">
+  <BaseModal v-if="showStartModal" @close="showStartModal = false; startError = ''; startForm.password = ''">
     <h2>Iniciar Rodada</h2>
     <div class="form-grid">
       <div class="field full">
@@ -84,10 +84,17 @@
         <label>Label (opcional)</label>
         <input type="text" v-model="startForm.label" placeholder="ex: Rodada 20 - 15/06" />
       </div>
+      <div class="field full">
+        <label>Senha de administrador</label>
+        <input type="password" v-model="startForm.password" placeholder="••••••••" autofocus @keyup.enter="doStartRound" />
+      </div>
     </div>
+    <div v-if="startError" style="color:var(--red);font-size:12px;margin-top:8px">{{ startError }}</div>
     <div class="modal-actions">
-      <button class="btn btn-primary" @click="doStartRound">Iniciar</button>
-      <button class="btn btn-ghost"   @click="showStartModal = false">Cancelar</button>
+      <button class="btn btn-primary" @click="doStartRound" :disabled="starting">
+        {{ starting ? 'Iniciando...' : 'Iniciar' }}
+      </button>
+      <button class="btn btn-ghost" @click="showStartModal = false">Cancelar</button>
     </div>
   </BaseModal>
 
@@ -208,6 +215,7 @@ import BaseModal from '../components/BaseModal.vue'
 import { useRounds } from '../stores/rounds'
 import { useConfig } from '../stores/config'
 import { useToast } from '../composables/useToast'
+import { authApi, setAdminPassword } from '../api'
 
 const { currentRound, roundPlayers, allPlayers, fetchCurrent, fetchAllPlayers, startRound, addPlayer, updatePlayer, removePlayer, finalize } = useRounds()
 const { config, fetch: fetchConfig } = useConfig()
@@ -223,9 +231,11 @@ const editingPlayer   = ref(null)
 const finalizeResult  = ref(null)
 const saving          = ref(false)
 const finalizing      = ref(false)
+const starting        = ref(false)
 const formError       = ref('')
+const startError      = ref('')
 
-const startForm = ref({ label: '', date: '' })
+const startForm = ref({ label: '', date: '', password: '' })
 const form = ref({
   name: '', buyin: 1, addon: 0, pontos: 0,
   presenca: 10, bonus: 0, indicacao: 0, pontualidade: 15,
@@ -287,13 +297,27 @@ function openEdit() {
 }
 
 async function doStartRound() {
+  startError.value = ''
+  if (!startForm.value.password) {
+    startError.value = 'Informe a senha de administrador.'
+    return
+  }
+  starting.value = true
   try {
+    const { data: auth } = await authApi.verify(startForm.value.password)
+    if (!auth.valid) {
+      startError.value = 'Senha incorreta.'
+      return
+    }
+    setAdminPassword(startForm.value.password)
     await startRound(startForm.value.label, startForm.value.date || null)
     showStartModal.value = false
-    startForm.value = { label: '', date: '' }
+    startForm.value = { label: '', date: '', password: '' }
     toast('Rodada iniciada! ✓')
   } catch (e) {
-    toast(e.response?.data?.detail || 'Erro ao iniciar rodada.')
+    startError.value = e.response?.data?.detail || 'Erro ao iniciar rodada.'
+  } finally {
+    starting.value = false
   }
 }
 
