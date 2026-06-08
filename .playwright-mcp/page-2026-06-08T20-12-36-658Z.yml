@@ -1,0 +1,48 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]: ♠ Poker Night
+    - generic [ref=e5]: seg., 08 de junho de 2026
+    - button "🔒 Bloquear" [ref=e523] [cursor=pointer]
+  - navigation [ref=e6]:
+    - button "Rodada Atual" [ref=e7] [cursor=pointer]
+    - button "Ranking Semestral" [ref=e8] [cursor=pointer]
+    - button "Financeiro" [ref=e9] [cursor=pointer]
+    - button "Configurações" [ref=e10] [cursor=pointer]
+  - main [ref=e11]:
+    - generic [ref=e618]:
+      - generic [ref=e619]:
+        - generic [ref=e620]:
+          - generic [ref=e621]: JOGADORES
+          - generic [ref=e622]: "0"
+        - generic [ref=e623]:
+          - generic [ref=e624]: BUY-INS / REBUYS
+          - generic [ref=e625]: "0"
+        - generic [ref=e626]:
+          - generic [ref=e627]: ADDONS
+          - generic [ref=e628]: "0"
+        - generic [ref=e629]:
+          - generic [ref=e630]: CAIXA DA NOITE
+          - generic [ref=e631]: R$ 0,00
+        - generic [ref=e632]:
+          - generic [ref=e633]: LÍDER
+          - generic [ref=e634]: —
+      - generic [ref=e635]:
+        - generic [ref=e636]: ♠
+        - paragraph [ref=e637]:
+          - text: Nenhuma rodada em andamento.
+          - text: Inicie uma nova rodada para começar.
+        - button "+ Iniciar Rodada" [ref=e638] [cursor=pointer]
+    - generic [ref=e640]:
+      - heading "Iniciar Rodada" [level=2] [ref=e641]
+      - generic [ref=e642]:
+        - generic [ref=e643]:
+          - generic [ref=e644]: Data
+          - textbox [ref=e645]: 2026-06-08
+        - generic [ref=e646]:
+          - generic [ref=e647]: Label (opcional)
+          - 'textbox "ex: Rodada 20 - 15/06" [ref=e648]'
+      - generic [ref=e649]:
+        - button "Iniciar" [active] [ref=e650] [cursor=pointer]
+        - button "Cancelar" [ref=e651] [cursor=pointer]
+  - contentinfo [ref=e33]: ♠ Poker Night Manager — API /api
+  - generic: "[ { \"type\": \"none_required\", \"loc\": [ \"body\", \"date\" ], \"msg\": \"Input should be None\", \"input\": \"2026-06-08\" } ]"

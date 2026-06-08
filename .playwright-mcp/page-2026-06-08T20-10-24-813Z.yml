@@ -1,0 +1,34 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]: ♠ Poker Night
+    - generic [ref=e5]: seg., 08 de junho de 2026
+  - navigation [ref=e6]:
+    - button "Rodada Atual" [ref=e7] [cursor=pointer]
+    - button "Ranking Semestral" [ref=e8] [cursor=pointer]
+    - button "Financeiro" [ref=e9] [cursor=pointer]
+    - button "Configurações" [ref=e10] [cursor=pointer]
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - generic [ref=e15]: JOGADORES
+          - generic [ref=e16]: "0"
+        - generic [ref=e17]:
+          - generic [ref=e18]: BUY-INS / REBUYS
+          - generic [ref=e19]: "0"
+        - generic [ref=e20]:
+          - generic [ref=e21]: ADDONS
+          - generic [ref=e22]: "0"
+        - generic [ref=e23]:
+          - generic [ref=e24]: CAIXA DA NOITE
+          - generic [ref=e25]: R$ 0,00
+        - generic [ref=e26]:
+          - generic [ref=e27]: LÍDER
+          - generic [ref=e28]: —
+      - generic [ref=e29]:
+        - generic [ref=e30]: ♠
+        - paragraph [ref=e31]:
+          - text: Nenhuma rodada em andamento.
+          - text: Inicie uma nova rodada para começar.
+        - button "+ Iniciar Rodada" [ref=e32] [cursor=pointer]
+  - contentinfo [ref=e33]: ♠ Poker Night Manager — API /api

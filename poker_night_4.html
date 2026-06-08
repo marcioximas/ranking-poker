@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poker Night Manager ♠</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --surface3: #252525;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --gold: #c9a227;
+    --gold-dim: #8a6e18;
+    --green: #1c6e42;
+    --green-bright: #25a05e;
+    --red: #c0392b;
+    --text: #e8e8e8;
+    --text-dim: #888;
+    --text-faint: #444;
+    --accent: #c9a227;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-suit { font-size: 22px; }
+
+  .header-date {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    padding: 0 24px;
+    overflow-x: auto;
+    gap: 0;
+  }
+
+  nav button {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 14px 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  /* ── MAIN ── */
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.2s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* ── STAT CARDS ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+
+  .stat-card:hover { border-color: var(--border2); }
+  .stat-card .lbl { font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px; margin-bottom: 6px; }
+  .stat-card .val { font-size: 22px; font-weight: 500; color: var(--gold); font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+  .stat-card .val.green { color: var(--green-bright); }
+  .stat-card .val.red { color: var(--red); }
+  .stat-card .val.white { color: var(--text); }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* ── BUTTONS ── */
+  button, .btn {
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+    transition: opacity 0.15s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+  }
+
+  button:active { transform: scale(0.97); }
+
+  .btn-primary { background: var(--green); color: #fff; }
+  .btn-primary:hover { background: var(--green-bright); }
+  .btn-gold { background: var(--gold); color: #0d0d0d; font-weight: 500; }
+  .btn-gold:hover { opacity: 0.88; }
+  .btn-ghost { background: var(--surface3); color: var(--text-dim); }
+  .btn-ghost:hover { color: var(--text); background: #2e2e2e; }
+  .btn-danger { background: rgba(192,57,43,0.15); color: #e74c3c; border: 1px solid rgba(192,57,43,0.2); }
+  .btn-danger:hover { background: rgba(192,57,43,0.25); }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: fixed;
+  }
+
+  thead th {
+    background: #0f2a1a;
+    color: var(--gold);
+    padding: 11px 12px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: sticky;
+    top: 0;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(201,162,39,0.05); }
+  tbody tr.selected { background: rgba(28,110,66,0.2); }
+
+  tbody td {
+    padding: 10px 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  tbody td.name { color: var(--text); font-weight: 500; }
+  tbody td.total { color: var(--gold); font-weight: 500; font-size: 14px; }
+  tbody td.num { color: #7ec8a4; }
+  tbody td.zero { color: var(--text-faint); }
+  tbody td.medal { font-size: 16px; text-align: center; }
+  tbody tr:nth-child(1) td { background: rgba(201,162,39,0.04); }
+  tbody tr:nth-child(2) td { background: rgba(180,180,180,0.02); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalIn 0.2s ease;
+  }
+
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .modal h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--gold);
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px; }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select {
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 9px 12px;
+    width: 100%;
+    transition: border-color 0.2s;
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus { border-color: var(--gold); }
+
+  select option { background: var(--surface3); }
+
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+
+  /* ── FINANCEIRO ── */
+  .fin-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .fin-layout { grid-template-columns: 1fr; } }
+
+  .fin-section-title {
+    font-size: 11px;
+    color: var(--gold-dim);
+    letter-spacing: 1px;
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .fin-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+
+  .fin-row:last-child { border-bottom: none; }
+  .fin-lbl { font-size: 12px; color: var(--text-dim); }
+  .fin-val { font-size: 13px; font-weight: 500; color: var(--text); }
+  .fin-val.gold { color: var(--gold); }
+  .fin-val.green { color: var(--green-bright); }
+  .fin-val.red { color: var(--red); }
+
+  .fin-input-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+
+  .fin-input-row label { font-size: 12px; color: var(--text-dim); }
+  .fin-input-row input { width: 120px; text-align: right; }
+
+  /* ── RANKING SEMESTRAL ── */
+  .round-filter {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+
+  .round-pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text-dim);
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .round-pill.active { background: #0f2a1a; color: var(--green-bright); border-color: var(--green); }
+  .round-pill:hover { border-color: var(--border2); color: var(--text); }
+
+  .pill-label { font-size: 11px; color: var(--text-dim); align-self: center; margin-right: 4px; white-space: nowrap; }
+
+  /* ── CONFIG ── */
+  .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; max-width: 600px; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+    max-width: 320px;
+  }
+
+  #toast.show { opacity: 1; transform: none; }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-faint);
+  }
+
+  .empty .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+  .empty p { font-size: 14px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    main { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .toolbar { gap: 6px; }
+    .stat-card .val { font-size: 18px; }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 16px 24px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.5px;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-suit">♠</span>
+    Poker Night
+  </div>
+  <span class="header-date" id="header-date"></span>
+</header>
+
+<nav>
+  <button class="active" onclick="showPanel('rodada', this)">Rodada Atual</button>
+  <button onclick="showPanel('ranking', this)">Ranking Semestral</button>
+  <button onclick="showPanel('financeiro', this)">Financeiro</button>
+  <button onclick="showPanel('config', this)">Configurações</button>
+</nav>
+
+<main>
+
+  <!-- RODADA -->
+  <div id="p-rodada" class="panel active">
+    <div class="stat-grid" id="stats-rodada"></div>
+    <div class="toolbar">
+      <button class="btn-primary" onclick="openModal('add')">+ Adicionar Jogador</button>
+      <button class="btn-ghost" onclick="editSelected()">✎ Editar</button>
+      <button class="btn-danger btn-sm" onclick="removeSelected()">✕ Remover</button>
+      <button class="btn-gold" style="margin-left:auto" onclick="finalizarRodada()">✓ Finalizar Rodada</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px">#</th>
+            <th style="width:140px">Nome</th>
+            <th style="width:90px">Buy-in/Rebuy</th>
+            <th style="width:70px">Addon</th>
+            <th style="width:80px">Pontos</th>
+            <th style="width:80px">Presença</th>
+            <th style="width:80px">Bônus ITM</th>
+            <th style="width:80px">Indicação</th>
+            <th style="width:90px">Pontualidade</th>
+            <th style="width:80px">Total</th>
+          </tr>
+        </thead>
+        <tbody id="rodada-body"></tbody>
+      </table>
+      <div class="empty" id="rodada-empty" style="display:none">
+        <div class="empty-icon">♠</div>
+        <p>Nenhum jogador adicionado ainda.<br>Clique em "Adicionar Jogador" para começar.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKING SEMESTRAL -->
+  <div id="p-ranking" class="panel">
+    <div class="stat-grid" id="stats-ranking"></div>
+    <div class="round-filter" id="round-filter">
+      <span class="pill-label">Rodadas:</span>
+    </div>
+    <div class="toolbar">
+      <button class="btn-ghost btn-sm" onclick="toggleAllRounds(true)">Todas</button>
+      <button class="btn-ghost btn-sm" onclick="toggleAllRounds(false)">Nenhuma</button>
+      <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <span id="rank-edit-status" style="font-size:11px;color:var(--text-faint)">🔒 Edição bloqueada</span>
+        <button class="btn-ghost btn-sm" id="rank-lock-btn" onclick="toggleRankEdit()">Desbloquear</button>
+        <button class="btn-primary btn-sm" id="rank-add-btn" onclick="requireRankAuth(()=>openModal('addRound'))" style="display:none">+ Nova Rodada</button>
+        <button class="btn-ghost btn-sm" id="rank-edit-row-btn" onclick="requireRankAuth(()=>openModal('editRound'))" style="display:none">✎ Editar Rodada</button>
+        <button class="btn-danger btn-sm" id="rank-del-btn" onclick="requireRankAuth(deleteRound)" style="display:none">✕ Excluir</button>
+      </span>
+    </div>
+    <div class="table-wrap">
+      <table id="ranking-table">
+        <thead id="ranking-thead"></thead>
+        <tbody id="ranking-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FINANCEIRO -->
+  <div id="p-financeiro" class="panel">
+    <div class="stat-grid" id="stats-fin"></div>
+    <div class="fin-layout">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <p class="fin-section-title" style="margin:0">DESPESAS</p>
+          <button class="btn-primary btn-sm" onclick="openModal('addDespesa')">+ Adicionar</button>
+        </div>
+        <div id="fin-despesas-inputs"></div>
+        <br>
+        <p class="fin-section-title">HISTÓRICO</p>
+        <div class="fin-input-row">
+          <label>Caixa Anterior (R$)</label>
+          <input type="number" id="fin-cx-ant" value="3868.23" step="0.01" onchange="renderFin()">
+        </div>
+        <div class="fin-input-row">
+          <label>Ranking Anterior (R$)</label>
+          <input type="number" id="fin-rk-ant" value="1621.25" step="0.01" onchange="renderFin()">
+        </div>
+        <br>
+        <button class="btn-primary" onclick="renderFin()">↺ Recalcular</button>
+      </div>
+      <div>
+        <p class="fin-section-title">RESUMO FINANCEIRO</p>
+        <div id="fin-resumo"></div>
+        <br>
+        <p class="fin-section-title">PREMIAÇÃO DA NOITE</p>
+        <div id="fin-premiacao"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="p-config" class="panel">
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:20px">Configurações aplicadas em todas as rodadas novas.</p>
+    <div class="config-grid">
+      <div class="field">
+        <label>Nome do torneio</label>
+        <input type="text" id="cfg-nome" value="Poker Night">
+      </div>
+      <div class="field">
+        <label>Buy-in / Rebuy (R$)</label>
+        <input type="number" id="cfg-buyin" value="5" min="0" step="0.5">
+      </div>
+      <div class="field">
+        <label>Addon (R$)</label>
+        <input type="number" id="cfg-addon" value="1" min="0" step="0.5">
+      </div>
+      <div class="field">
+        <label>Pontos presença</label>
+        <input type="number" id="cfg-presenca" value="10" min="0">
+      </div>
+      <div class="field">
+        <label>Pontos pontualidade</label>
+        <input type="number" id="cfg-pont" value="15" min="0">
+      </div>
+      <div class="field">
+        <label>Bônus ITM (pontos)</label>
+        <input type="number" id="cfg-itm" value="5" min="0">
+      </div>
+      <div class="field">
+        <label>% Premiação da noite</label>
+        <input type="number" id="cfg-prem-pct" value="70" min="0" max="100">
+      </div>
+      <div class="field">
+        <label>% Ranking da noite</label>
+        <input type="number" id="cfg-rk-pct" value="30" min="0" max="100">
+      </div>
+    </div>
+    <br>
+    <button class="btn-gold" onclick="toast('Configurações salvas! ✓')">Salvar Configurações</button>
+  </div>
+
+</main>
+
+<footer>♠ Poker Night Manager — dados salvos localmente no navegador</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-box"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let S = loadState() || {
+  players: [],
+  nextId: 1,
+  selectedId: null,
+  despesas: { dealer:50, maleta:900, mesa:800, lavagem:130, cadeiras:1120, baralho:90, tv:1025, camera:337 },
+  finCxAnt: 3868.23,
+  finRkAnt: 1621.25,
+  rounds: [
+    {id:1,  label:"Rodada 1 - 08/10"},
+    {id:2,  label:"Rodada 2 - 05/11"},
+    {id:3,  label:"Rodada 3 - 19/11"},
+    {id:4,  label:"Rodada 4 - 10/12"},
+    {id:5,  label:"Rodada 5 - 14/01"},
+    {id:6,  label:"Rodada 6 - 28/01"},
+    {id:7,  label:"Rodada 7 - 11/02"},
+    {id:8,  label:"Rodada 8 - 25/02"},
+    {id:9,  label:"Rodada 9 - 11/03"},
+    {id:10, label:"Rodada 10 - 25/03"},
+    {id:11, label:"Rodada 11 - 08/04"},
+    {id:12, label:"Rodada 12 - 22/04"},
+    {id:13, label:"Rodada 13 - 06/05"},
+    {id:14, label:"Rodada 14 - 20/05"},
+    {id:15, label:"Rodada 15 - 03/06"},
+    {id:16, label:"Rodada 16 - 17/06"},
+    {id:17, label:"Rodada 17 - 22/06"},
+    {id:18, label:"Rodada 18 - 06/07"},
+    {id:19, label:"Rodada 19 - 13/07"},
+  ],
+  activeRounds: [17,18,19],
+  semestral: {
+    "Mateus":       [100,85,55,90,75,80,95,70,85,55,90,100,53,25,95,85,0,0,0],
+    "Henrique":     [80,70,25,70,60,55,80,65,70,25,75,85,25,25,25,25,0,0,0],
+    "China":        [90,95,85,80,70,75,90,80,75,45,80,90,25,25,25,158,0,0,0],
+    "Ximas":        [60,50,40,55,45,50,65,55,50,68,122,45,10,0,0,0,0,0,0],
+    "Deivid":       [55,60,50,60,55,50,70,60,55,45,45,50,25,25,0,0,0,0,0],
+    "Morais":       [40,45,35,45,40,35,55,45,40,25,25,0,25,0,0,0,0,0,0],
+    "Danilo Vieira":[35,40,30,40,35,30,50,40,35,25,77,25,25,0,0,0,0,0,0],
+    "Andre":        [0,0,0,0,0,0,0,0,0,0,45,25,0,0,0,0,0,0,0],
+    "Joel":         [0,0,0,0,0,0,0,0,0,0,25,25,0,0,0,0,0,0,0],
+    "Rafael":       [25,25,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    "Marcelo":      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    "Chamma":       [0,0,0,0,0,0,0,0,0,0,25,0,25,0,0,0,0,0,0],
+    "Comando":      [0,0,0,0,0,0,0,0,0,0,0,45,0,0,0,0,0,0,0],
+    "Para":         [0,0,0,0,0,0,0,0,0,0,25,0,0,0,0,0,0,0,0],
+    "Cicero":       [0,0,0,0,0,0,0,0,0,0,25,0,0,0,0,0,0,0,0],
+    "Claudinho":    [0,0,0,0,0,0,0,0,0,0,25,0,0,0,0,0,0,0,0],
+  }
+};
+
+function saveState() {
+  try { localStorage.setItem('poker_night_v5', JSON.stringify(S)); } catch(e){}
+}
+
+function loadState() {
+  try {
+    const d = localStorage.getItem('poker_night_v5');
+    return d ? JSON.parse(d) : null;
+  } catch(e) { return null; }
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const cfgN = id => parseFloat($(id)?.value) || 0;
+const brl = v => 'R$ ' + Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, '.').replace('.', ',');
+const MEDALS = ['🥇','🥈','🥉'];
+
+function calcTotal(p) {
+  return (p.pontos||0) + (p.presenca||0) + (p.bonus||0) + (p.indicacao||0) + (p.pont||0);
+}
+
+function toast(msg, dur=2800) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ── PANELS ────────────────────────────────────────────────────────────────
+function showPanel(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  $('p-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='rodada') renderRodada();
+  if(id==='ranking') renderRanking();
+  if(id==='financeiro') renderFin();
+}
+
+// ── RODADA ────────────────────────────────────────────────────────────────
+function renderRodada() {
+  const players = [...S.players].sort((a,b) => calcTotal(b)-calcTotal(a));
+  const tbody = $('rodada-body');
+  tbody.innerHTML = '';
+  const empty = $('rodada-empty');
+
+  if (!players.length) {
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    players.forEach((p, i) => {
+      const total = calcTotal(p);
+      const tr = document.createElement('tr');
+      if(S.selectedId === p.id) tr.classList.add('selected');
+      tr.onclick = () => { S.selectedId = p.id; renderRodada(); };
+      const tdNum = (n, cl='') => `<td class="${n?'num':'zero'} ${cl}">${n}</td>`;
+      tr.innerHTML = `
+        <td class="medal">${MEDALS[i]||i+1}</td>
+        <td class="name">${p.nome}</td>
+        ${tdNum(p.buyin)} ${tdNum(p.addon)}
+        ${tdNum(p.pontos)} ${tdNum(p.presenca)}
+        ${tdNum(p.bonus)} ${tdNum(p.indicacao)} ${tdNum(p.pont)}
+        <td class="total">${total}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  const totalBI = S.players.reduce((a,p)=>a+(p.buyin||0),0);
+  const totalAD = S.players.reduce((a,p)=>a+(p.addon||0),0);
+  const caixa = totalBI * cfgN('cfg-buyin') + totalAD * cfgN('cfg-addon');
+  const leader = players[0];
+
+  $('stats-rodada').innerHTML = `
+    <div class="stat-card"><div class="lbl">JOGADORES</div><div class="val white">${S.players.length}</div></div>
+    <div class="stat-card"><div class="lbl">BUY-INS / REBUYS</div><div class="val white">${totalBI}</div></div>
+    <div class="stat-card"><div class="lbl">ADDONS</div><div class="val white">${totalAD}</div></div>
+    <div class="stat-card"><div class="lbl">CAIXA DA NOITE</div><div class="val green">${brl(caixa)}</div></div>
+    <div class="stat-card"><div class="lbl">LÍDER</div><div class="val" style="font-size:16px">${leader?.nome||'—'}</div></div>
+  `;
+}
+
+function editSelected() {
+  if (!S.selectedId) return toast('Selecione um jogador primeiro.');
+  openModal('edit', S.selectedId);
+}
+
+function removeSelected() {
+  if (!S.selectedId) return toast('Selecione um jogador primeiro.');
+  const p = S.players.find(x=>x.id===S.selectedId);
+  if (!p) return;
+  if (!confirm(`Remover "${p.nome}"?`)) return;
+  S.players = S.players.filter(x=>x.id!==S.selectedId);
+  S.selectedId = null;
+  saveState();
+  renderRodada();
+  toast('Jogador removido.');
+}
+
+function finalizarRodada() {
+  if (!S.players.length) return toast('Adicione jogadores antes de finalizar.');
+  const sorted = [...S.players].sort((a,b)=>calcTotal(b)-calcTotal(a));
+  const p1 = sorted[0], p2 = sorted[1];
+  const totalBI = S.players.reduce((a,p)=>a+(p.buyin||0),0);
+  const totalAD = S.players.reduce((a,p)=>a+(p.addon||0),0);
+  const caixa = totalBI * cfgN('cfg-buyin') + totalAD * cfgN('cfg-addon');
+  const premPct = cfgN('cfg-prem-pct')/100;
+  const prem = caixa * premPct;
+
+  $('modal-box').innerHTML = `
+    <h2>Resultado da Rodada</h2>
+    <div style="display:grid;gap:10px;margin-bottom:20px">
+      <div class="stat-card"><div class="lbl">CAIXA DA NOITE</div><div class="val green">${brl(caixa)}</div></div>
+      <div class="stat-card"><div class="lbl">PREMIAÇÃO TOTAL (${Math.round(premPct*100)}%)</div><div class="val">${brl(prem)}</div></div>
+    </div>
+    <div class="fin-row"><span class="fin-lbl">🥇 ${p1?.nome||'—'} (${p1?calcTotal(p1):0} pts)</span><span class="fin-val gold">${brl(prem*0.7)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">🥈 ${p2?.nome||'—'} (${p2?calcTotal(p2):0} pts)</span><span class="fin-val">${brl(prem*0.3)}</span></div>
+    <div style="margin-top:20px;padding:14px;background:var(--surface3);border-radius:10px;font-size:12px;color:var(--text-dim)">
+      <strong style="color:var(--text)">Classificação completa</strong><br><br>
+      ${sorted.map((p,i)=>`${MEDALS[i]||i+1} ${p.nome} — ${calcTotal(p)} pts`).join('<br>')}
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-gold" onclick="closeModal()">Fechar</button>
+    </div>
+  `;
+  $('modal-overlay').classList.add('open');
+}
+
+// ── RANKING SEMESTRAL ──────────────────────────────────────────────────────
+function renderRanking() {
+  const visIds = S.activeRounds;
+  const visRounds = S.rounds.filter(r => visIds.includes(r.id));
+
+  // pills
+  const filter = $('round-filter');
+  filter.innerHTML = '<span class="pill-label">Rodadas:</span>';
+  S.rounds.forEach(r => {
+    const sp = document.createElement('span');
+    sp.className = 'round-pill' + (visIds.includes(r.id)?' active':'');
+    sp.textContent = r.label;
+    sp.onclick = () => {
+      const idx = S.activeRounds.indexOf(r.id);
+      if(idx>=0) S.activeRounds.splice(idx,1);
+      else S.activeRounds.push(r.id);
+      saveState();
+      renderRanking();
+    };
+    filter.appendChild(sp);
+  });
+
+  // table header
+  const thead = $('ranking-thead');
+  thead.innerHTML = '<tr><th style="width:44px">#</th><th style="width:130px">Nome</th>' +
+    visRounds.map(r=>`<th style="width:75px;font-size:10px">${r.label.replace(' - ',' ')}</th>`).join('') +
+    '<th style="width:80px">Total</th></tr>';
+
+  // rows
+  const tbody = $('ranking-tbody');
+  tbody.innerHTML = '';
+  const players = Object.keys(S.semestral);
+  const rows = players.map(nome => {
+    const all = S.semestral[nome] || [];
+    const scores = visRounds.map(r => all[r.id-1]||0);
+    const total = scores.reduce((a,b)=>a+b,0);
+    return {nome, scores, total};
+  }).sort((a,b)=>b.total-a.total);
+
+  rows.forEach((r,i) => {
+    const tr = document.createElement('tr');
+    tr.style.cursor = S.rankEditMode ? 'pointer' : 'default';
+    if (S.selectedRankPlayer === r.nome) tr.classList.add('selected');
+    tr.onclick = () => { S.selectedRankPlayer = r.nome; renderRanking(); };
+    tr.innerHTML = `<td class="medal">${MEDALS[i]||i+1}</td><td class="name">${r.nome}</td>` +
+      r.scores.map((s, si) => {
+        const rId = visRounds[si]?.id;
+        const editable = S.rankEditMode;
+        return `<td class="${s>0?'num':'zero'}" ${editable?`onclick="event.stopPropagation();editScore('${r.nome}',${rId},${s},this)" style="cursor:pointer" title="Clique para editar"`:''}>${s||0}</td>`;
+      }).join('') +
+      `<td class="total">${r.total}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const topPts = rows[0]?.total||0;
+  $('stats-ranking').innerHTML = `
+    <div class="stat-card"><div class="lbl">RODADAS VISÍVEIS</div><div class="val white">${visRounds.length} / ${S.rounds.length}</div></div>
+    <div class="stat-card"><div class="lbl">JOGADORES ATIVOS</div><div class="val white">${rows.filter(r=>r.total>0).length}</div></div>
+    <div class="stat-card"><div class="lbl">LÍDER SEMESTRAL</div><div class="val" style="font-size:16px">${rows[0]?.nome||'—'}</div></div>
+    <div class="stat-card"><div class="lbl">PONTUAÇÃO DO LÍDER</div><div class="val">${topPts}</div></div>
+  `;
+}
+
+function toggleAllRounds(on) {
+  S.activeRounds = on ? S.rounds.map(r=>r.id) : [];
+  saveState();
+  renderRanking();
+}
+
+// ── RANK EDIT AUTH ────────────────────────────────────────────────────────
+const RANK_PWD = btoa('Ximas2026@');
+
+function toggleRankEdit() {
+  if (S.rankEditMode) {
+    S.rankEditMode = false;
+    updateRankEditUI();
+    renderRanking();
+    return;
+  }
+  openModal('rankAuth');
+}
+
+function updateRankEditUI() {
+  const locked = !S.rankEditMode;
+  const status = $('rank-edit-status');
+  const lockBtn = $('rank-lock-btn');
+  const addBtn = $('rank-add-btn');
+  const editBtn = $('rank-edit-row-btn');
+  const delBtn = $('rank-del-btn');
+  if (status) status.textContent = locked ? '🔒 Edição bloqueada' : '🔓 Modo edição';
+  if (status) status.style.color = locked ? 'var(--text-faint)' : 'var(--gold)';
+  if (lockBtn) lockBtn.textContent = locked ? 'Desbloquear' : 'Bloquear';
+  if (addBtn) addBtn.style.display = locked ? 'none' : '';
+  if (editBtn) editBtn.style.display = locked ? 'none' : '';
+  if (delBtn) delBtn.style.display = locked ? 'none' : '';
+}
+
+function requireRankAuth(fn) {
+  if (S.rankEditMode) fn();
+  else openModal('rankAuth', fn);
+}
+
+function checkRankPwd(fn) {
+  const pwd = $('m-rank-pwd').value;
+  if (btoa(pwd) === RANK_PWD) {
+    S.rankEditMode = true;
+    closeModal();
+    updateRankEditUI();
+    renderRanking();
+    if (fn) fn();
+  } else {
+    $('m-rank-pwd-err').textContent = 'Senha incorreta.';
+    $('m-rank-pwd').value = '';
+    $('m-rank-pwd').focus();
+  }
+}
+
+function editScore(nome, roundId, currentVal, td) {
+  if (!S.rankEditMode) return;
+  const roundIdx = S.rounds.findIndex(r => r.id === roundId);
+  if (roundIdx < 0) return;
+  openModal('editScore', {nome, roundId, roundIdx, currentVal});
+}
+
+function saveEditedScore(nome, roundIdx, newVal) {
+  if (!S.semestral[nome]) S.semestral[nome] = new Array(S.rounds.length).fill(0);
+  while (S.semestral[nome].length <= roundIdx) S.semestral[nome].push(0);
+  S.semestral[nome][roundIdx] = parseInt(newVal) || 0;
+  saveState();
+  closeModal();
+  renderRanking();
+  toast('Pontuação atualizada ✓');
+}
+
+function deleteRound() {
+  if (!S.rankEditMode) return;
+  if (!S.selectedRankPlayer) {
+    // ask which round to delete
+    openModal('deleteRound');
+    return;
+  }
+  openModal('deleteRound');
+}
+
+function confirmDeleteRound(roundId) {
+  const idx = S.rounds.findIndex(r => r.id === roundId);
+  if (idx < 0) return;
+  const label = S.rounds[idx].label;
+  if (!confirm(`Excluir "${label}" do ranking? Esta ação não pode ser desfeita.`)) return;
+  S.rounds.splice(idx, 1);
+  // remove score column from all players
+  for (const nome of Object.keys(S.semestral)) {
+    if (S.semestral[nome].length > idx) S.semestral[nome].splice(idx, 1);
+  }
+  // update ids
+  S.rounds.forEach((r, i) => r.id = i + 1);
+  S.activeRounds = S.rounds.map(r => r.id);
+  saveState();
+  closeModal();
+  renderRanking();
+  toast(`"${label}" excluída ✓`);
+}
+
+// ── FINANCEIRO ────────────────────────────────────────────────────────────
+function initFinInputs() {
+  const cont = $('fin-despesas-inputs');
+  cont.innerHTML = '';
+  if (!S.despesas || typeof S.despesas !== 'object') S.despesas = {};
+  const entries = Object.entries(S.despesas);
+  if (!entries.length) {
+    cont.innerHTML = '<p style="font-size:12px;color:var(--text-faint);padding:8px 0">Nenhuma despesa cadastrada.</p>';
+    return;
+  }
+  entries.forEach(([k, v]) => {
+    const row = document.createElement('div');
+    row.className = 'fin-input-row';
+    row.style.gap = '8px';
+    row.innerHTML = `
+      <label style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${k}">${k}</label>
+      <input type="number" value="${v||0}" step="0.01" style="width:100px;text-align:right"
+        onchange="S.despesas['${k}']=parseFloat(this.value)||0;saveState();renderFin()">
+      <button class="btn-danger btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removeDespesa('${k}')">✕</button>
+    `;
+    cont.appendChild(row);
+  });
+}
+
+function removeDespesa(key) {
+  if (!confirm(`Remover despesa "${key}"?`)) return;
+  delete S.despesas[key];
+  saveState();
+  initFinInputs();
+  renderFin();
+}
+
+function renderFin() {
+  const cx_ant = parseFloat($('fin-cx-ant')?.value)||0;
+  const rk_ant = parseFloat($('fin-rk-ant')?.value)||0;
+  S.finCxAnt = cx_ant; S.finRkAnt = rk_ant;
+
+  const totalBI = S.players.reduce((a,p)=>a+(p.buyin||0),0);
+  const totalAD = S.players.reduce((a,p)=>a+(p.addon||0),0);
+  const cxNt = totalBI*cfgN('cfg-buyin') + totalAD*cfgN('cfg-addon');
+  const cxAtual = cx_ant + cxNt;
+  const premPct = cfgN('cfg-prem-pct')/100;
+  const rkPct = cfgN('cfg-rk-pct')/100;
+  const premTotal = cxNt * premPct;
+  const rkNt = cxNt * rkPct;
+  const rkTotal = rk_ant + rkNt;
+  const totalDesp = Object.values(S.despesas).reduce((a,b)=>a+b,0);
+  const cxDesp = cxAtual - totalDesp;
+
+  const sorted = [...S.players].sort((a,b)=>calcTotal(b)-calcTotal(a));
+  const p1 = sorted[0], p2 = sorted[1];
+
+  $('stats-fin').innerHTML = `
+    <div class="stat-card"><div class="lbl">CAIXA ATUAL</div><div class="val gold">${brl(cxAtual)}</div></div>
+    <div class="stat-card"><div class="lbl">RANKING TOTAL</div><div class="val gold">${brl(rkTotal)}</div></div>
+    <div class="stat-card"><div class="lbl">PREMIAÇÃO DA NOITE</div><div class="val green">${brl(premTotal)}</div></div>
+    <div class="stat-card"><div class="lbl">CAIXA C/ DESPESAS</div><div class="val ${cxDesp>=0?'green':'red'}">${(cxDesp<0?'-':'') + brl(cxDesp)}</div></div>
+  `;
+
+  $('fin-resumo').innerHTML = `
+    <div class="fin-row"><span class="fin-lbl">Caixa da noite</span><span class="fin-val green">${brl(cxNt)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">Caixa anterior</span><span class="fin-val">${brl(cx_ant)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">Caixa atual</span><span class="fin-val gold">${brl(cxAtual)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">Total despesas</span><span class="fin-val red">- ${brl(totalDesp)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">Caixa c/ despesas</span><span class="fin-val ${cxDesp>=0?'green':'red'}">${(cxDesp<0?'- ':'')+brl(cxDesp)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">Premiação (${Math.round(premPct*100)}%)</span><span class="fin-val gold">${brl(premTotal)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">Ranking noite (${Math.round(rkPct*100)}%)</span><span class="fin-val">${brl(rkNt)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">Ranking anterior</span><span class="fin-val">${brl(rk_ant)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">Ranking total</span><span class="fin-val gold">${brl(rkTotal)}</span></div>
+  `;
+
+  $('fin-premiacao').innerHTML = `
+    <div class="fin-row"><span class="fin-lbl">🥇 ${p1?.nome||'—'}</span><span class="fin-val gold">${brl(premTotal*0.7)}</span></div>
+    <div class="fin-row"><span class="fin-lbl">🥈 ${p2?.nome||'—'}</span><span class="fin-val">${brl(premTotal*0.3)}</span></div>
+  `;
+
+  saveState();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────
+function openModal(type, playerId) {
+  const box = $('modal-box');
+  const p = type==='edit' ? S.players.find(x=>x.id===playerId) : null;
+
+  if (type==='add' || type==='edit') {
+    const presPts = cfgN('cfg-presenca');
+    const pontPts = cfgN('cfg-pont');
+    box.innerHTML = `
+      <h2>${p?'Editar Jogador':'Novo Jogador'}</h2>
+      <div class="form-grid">
+        <div class="field full"><label>Nome</label><input type="text" id="m-nome" value="${p?.nome||''}" placeholder="Nome do jogador"></div>
+        <div class="field"><label>Buy-in / Rebuys</label><input type="number" id="m-buyin" value="${p?.buyin??1}" min="0"></div>
+        <div class="field"><label>Addons</label><input type="number" id="m-addon" value="${p?.addon??0}" min="0"></div>
+        <div class="field"><label>Pontos (chips finais)</label><input type="number" id="m-pontos" value="${p?.pontos??0}" min="0"></div>
+        <div class="field"><label>Bônus ITM</label><input type="number" id="m-bonus" value="${p?.bonus??0}" min="0"></div>
+        <div class="field"><label>Indicação (pts)</label><input type="number" id="m-indicacao" value="${p?.indicacao??0}" min="0"></div>
+        <div class="field"><label>Presença (+${presPts} pts)</label><select id="m-presenca"><option value="${presPts}" ${(p?.presenca??presPts)>0?'selected':''}>Presente</option><option value="0" ${(p?.presenca??presPts)===0?'selected':''}>Ausente</option></select></div>
+        <div class="field"><label>Pontual? (+${pontPts} pts)</label><select id="m-pont"><option value="${pontPts}" ${(p?.pont??pontPts)>0?'selected':''}>Sim</option><option value="0" ${(p?.pont??pontPts)===0?'selected':''}>Não</option></select></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-gold" onclick="savePlayer(${p?.id||0})">Confirmar</button>
+        <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      </div>
+    `;
+  } else if (type==='addDespesa') {
+    box.innerHTML = `
+      <h2>Nova Despesa</h2>
+      <div class="form-grid">
+        <div class="field full"><label>Nome da despesa</label><input type="text" id="m-desp-nome" placeholder="ex: Mesa, Fichas, Bebida..."></div>
+        <div class="field full"><label>Valor (R$)</label><input type="number" id="m-desp-valor" value="0" min="0" step="0.01"></div>
+      </div>
+      <div id="m-desp-error" style="font-size:12px;color:var(--red);min-height:18px;margin-top:8px"></div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-primary" onclick="saveDespesa()">Adicionar</button>
+        <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      </div>
+    `;
+    $('modal-overlay').classList.add('open');
+    setTimeout(() => $('m-desp-nome').focus(), 100);
+  } else if (type==='addRound') {
+    box.innerHTML = `
+      <h2>Nova Rodada</h2>
+      <div class="field" style="margin-bottom:16px">
+        <label>Data da rodada</label>
+        <input type="date" id="m-round-date">
+      </div>
+      <div class="field" style="margin-bottom:16px">
+        <label>Label (opcional)</label>
+        <input type="text" id="m-round-label" placeholder="ex: Rodada 20 - 27/07">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="addRound()">Adicionar</button>
+        <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+      </div>
+    `;
+  }
+
+  $('modal-overlay').classList.add('open');
+  setTimeout(() => { const f = box.querySelector('input,select'); if(f) f.focus(); }, 100);
+}
+
+function closeModal() { $('modal-overlay').classList.remove('open'); }
+
+function saveDespesa() {
+  const nome = $('m-desp-nome').value.trim();
+  const valor = parseFloat($('m-desp-valor').value) || 0;
+  const err = $('m-desp-error');
+  if (!nome) { err.textContent = 'Informe o nome da despesa.'; return; }
+  if (S.despesas[nome] !== undefined) { err.textContent = `Já existe uma despesa com o nome "${nome}".`; return; }
+  S.despesas[nome] = valor;
+  saveState();
+  closeModal();
+  initFinInputs();
+  renderFin();
+  toast(`Despesa "${nome}" adicionada! ✓`);
+}
+
+function savePlayer(id) {
+  const nome = $('m-nome').value.trim();
+  if (!nome) { toast('Nome é obrigatório!'); return; }
+  const p = {
+    id: id || S.nextId++,
+    nome,
+    buyin: parseInt($('m-buyin').value)||0,
+    addon: parseInt($('m-addon').value)||0,
+    pontos: parseInt($('m-pontos').value)||0,
+    presenca: parseInt($('m-presenca').value)||0,
+    bonus: parseInt($('m-bonus').value)||0,
+    indicacao: parseInt($('m-indicacao').value)||0,
+    pont: parseInt($('m-pont').value)||0,
+  };
+  if (id) {
+    const i = S.players.findIndex(x=>x.id===id);
+    if(i>=0) S.players[i] = p;
+  } else {
+    S.players.push(p);
+    // add to semestral ranking too
+    if (!S.semestral[nome]) {
+      S.semestral[nome] = new Array(S.rounds.length).fill(0);
+    }
+  }
+  closeModal();
+  saveState();
+  renderRodada();
+  toast(id ? 'Jogador atualizado! ✓' : 'Jogador adicionado! ✓');
+}
+
+function addRound() {
+  const dateEl = $('m-round-date');
+  const labelEl = $('m-round-label');
+  const id = S.rounds.length + 1;
+  let label = labelEl.value.trim();
+  if (!label && dateEl.value) {
+    const [y,m,d] = dateEl.value.split('-');
+    label = `Rodada ${id} - ${d}/${m}`;
+  } else if (!label) {
+    label = `Rodada ${id}`;
+  }
+  S.rounds.push({id, label});
+  S.activeRounds.push(id);
+  // pad all semestral arrays
+  for(const nome of Object.keys(S.semestral)) {
+    while(S.semestral[nome].length < S.rounds.length) S.semestral[nome].push(0);
+  }
+  closeModal();
+  saveState();
+  renderRanking();
+  toast(`${label} adicionada! ✓`);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+$('header-date').textContent = new Date().toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'long', year:'numeric'});
+
+initFinInputs();
+renderRodada();
+renderFin();
+
+// restore fin inputs from saved state
+if(S.finCxAnt) $('fin-cx-ant').value = S.finCxAnt;
+if(S.finRkAnt) $('fin-rk-ant').value = S.finRkAnt;
+for(const [k,v] of Object.entries(S.despesas)) {
+  const el = $('desp-'+k);
+  if(el) el.value = v;
+}
+</script>
+</body>
+</html>

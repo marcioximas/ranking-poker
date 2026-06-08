@@ -1,0 +1,106 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]: ♠ Poker Night
+    - generic [ref=e5]: seg., 08 de junho de 2026
+    - button "🔒 Bloquear" [ref=e523] [cursor=pointer]
+  - navigation [ref=e6]:
+    - button "Rodada Atual" [ref=e7] [cursor=pointer]
+    - button "Ranking Semestral" [ref=e8] [cursor=pointer]
+    - button "Financeiro" [ref=e9] [cursor=pointer]
+    - button "Configurações" [ref=e10] [cursor=pointer]
+  - main [ref=e11]:
+    - generic [ref=e524]:
+      - generic [ref=e525]:
+        - generic [ref=e526]:
+          - generic [ref=e527]: CAIXA ATUAL
+          - generic [ref=e528]: R$ 3.868,23
+        - generic [ref=e529]:
+          - generic [ref=e530]: RANKING TOTAL
+          - generic [ref=e531]: R$ 1.621,25
+        - generic [ref=e532]:
+          - generic [ref=e533]: PREMIAÇÃO DA NOITE
+          - generic [ref=e534]: R$ 0,00
+        - generic [ref=e535]:
+          - generic [ref=e536]: CAIXA C/ DESPESAS
+          - generic [ref=e537]: R$ 583,77
+      - generic [ref=e538]:
+        - generic [ref=e539]:
+          - generic [ref=e540]:
+            - paragraph [ref=e541]: DESPESAS
+            - button "+ Adicionar" [ref=e542] [cursor=pointer]
+          - generic [ref=e543]:
+            - generic "Baralho" [ref=e544]
+            - spinbutton [ref=e545]: "90"
+            - button "✕" [ref=e546] [cursor=pointer]
+          - generic [ref=e547]:
+            - generic "Cadeiras" [ref=e548]
+            - spinbutton [ref=e549]: "1120"
+            - button "✕" [ref=e550] [cursor=pointer]
+          - generic [ref=e551]:
+            - generic "Câmera" [ref=e552]
+            - spinbutton [ref=e553]: "337"
+            - button "✕" [ref=e554] [cursor=pointer]
+          - generic [ref=e555]:
+            - generic "Dealer" [ref=e556]
+            - spinbutton [ref=e557]: "50"
+            - button "✕" [ref=e558] [cursor=pointer]
+          - generic [ref=e559]:
+            - generic "Lavagem Mesa" [ref=e560]
+            - spinbutton [ref=e561]: "130"
+            - button "✕" [ref=e562] [cursor=pointer]
+          - generic [ref=e563]:
+            - generic "Maleta" [ref=e564]
+            - spinbutton [ref=e565]: "900"
+            - button "✕" [ref=e566] [cursor=pointer]
+          - generic [ref=e567]:
+            - generic "Mesa" [ref=e568]
+            - spinbutton [ref=e569]: "800"
+            - button "✕" [ref=e570] [cursor=pointer]
+          - generic [ref=e571]:
+            - generic "TV c/ Suporte" [ref=e572]
+            - spinbutton [ref=e573]: "1025"
+            - button "✕" [ref=e574] [cursor=pointer]
+          - paragraph [ref=e575]: HISTÓRICO
+          - generic [ref=e576]:
+            - generic [ref=e577]: Caixa Anterior (R$)
+            - spinbutton [ref=e578]: "3868.23"
+          - generic [ref=e579]:
+            - generic [ref=e580]: Ranking Anterior (R$)
+            - spinbutton [ref=e581]: "1621.25"
+        - generic [ref=e582]:
+          - paragraph [ref=e583]: RESUMO FINANCEIRO
+          - generic [ref=e584]:
+            - generic [ref=e585]: Caixa da noite
+            - generic [ref=e586]: R$ 0,00
+          - generic [ref=e587]:
+            - generic [ref=e588]: Caixa anterior
+            - generic [ref=e589]: R$ 3.868,23
+          - generic [ref=e590]:
+            - generic [ref=e591]: Caixa atual
+            - generic [ref=e592]: R$ 3.868,23
+          - generic [ref=e593]:
+            - generic [ref=e594]: Total despesas
+            - generic [ref=e595]: "- R$ 4.452,00"
+          - generic [ref=e596]:
+            - generic [ref=e597]: Caixa c/ despesas
+            - generic [ref=e598]: "- R$ 583,77"
+          - generic [ref=e599]:
+            - generic [ref=e600]: Premiação (0%)
+            - generic [ref=e601]: R$ 0,00
+          - generic [ref=e602]:
+            - generic [ref=e603]: Ranking noite
+            - generic [ref=e604]: R$ 0,00
+          - generic [ref=e605]:
+            - generic [ref=e606]: Ranking anterior
+            - generic [ref=e607]: R$ 1.621,25
+          - generic [ref=e608]:
+            - generic [ref=e609]: Ranking total
+            - generic [ref=e610]: R$ 1.621,25
+          - paragraph [ref=e611]: PREMIAÇÃO DA NOITE
+          - generic [ref=e612]:
+            - generic [ref=e613]: 🥇 1º lugar (70%)
+            - generic [ref=e614]: R$ 0,00
+          - generic [ref=e615]:
+            - generic [ref=e616]: 🥈 2º lugar (30%)
+            - generic [ref=e617]: R$ 0,00
+  - contentinfo [ref=e33]: ♠ Poker Night Manager — API /api

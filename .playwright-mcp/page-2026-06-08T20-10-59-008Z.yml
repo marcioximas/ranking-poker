@@ -1,0 +1,174 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]: ♠ Poker Night
+    - generic [ref=e5]: seg., 08 de junho de 2026
+  - navigation [ref=e6]:
+    - button "Rodada Atual" [ref=e7] [cursor=pointer]
+    - button "Ranking Semestral" [active] [ref=e8] [cursor=pointer]
+    - button "Financeiro" [ref=e9] [cursor=pointer]
+    - button "Configurações" [ref=e10] [cursor=pointer]
+  - main [ref=e11]:
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - generic [ref=e37]: RODADAS VISÍVEIS
+          - generic [ref=e38]: 3 / 19
+        - generic [ref=e39]:
+          - generic [ref=e40]: JOGADORES ATIVOS
+          - generic [ref=e41]: "0"
+        - generic [ref=e42]:
+          - generic [ref=e43]: LÍDER SEMESTRAL
+          - generic [ref=e44]: Mateus
+        - generic [ref=e45]:
+          - generic [ref=e46]: PONTUAÇÃO DO LÍDER
+          - generic [ref=e47]: "0"
+      - generic [ref=e48]:
+        - generic [ref=e49]: "Rodadas:"
+        - generic [ref=e50] [cursor=pointer]: Rodada 1 08/10
+        - generic [ref=e51] [cursor=pointer]: Rodada 2 05/11
+        - generic [ref=e52] [cursor=pointer]: Rodada 3 19/11
+        - generic [ref=e53] [cursor=pointer]: Rodada 4 10/12
+        - generic [ref=e54] [cursor=pointer]: Rodada 5 14/01
+        - generic [ref=e55] [cursor=pointer]: Rodada 6 28/01
+        - generic [ref=e56] [cursor=pointer]: Rodada 7 11/02
+        - generic [ref=e57] [cursor=pointer]: Rodada 8 25/02
+        - generic [ref=e58] [cursor=pointer]: Rodada 9 11/03
+        - generic [ref=e59] [cursor=pointer]: Rodada 10 25/03
+        - generic [ref=e60] [cursor=pointer]: Rodada 11 08/04
+        - generic [ref=e61] [cursor=pointer]: Rodada 12 22/04
+        - generic [ref=e62] [cursor=pointer]: Rodada 13 06/05
+        - generic [ref=e63] [cursor=pointer]: Rodada 14 20/05
+        - generic [ref=e64] [cursor=pointer]: Rodada 15 03/06
+        - generic [ref=e65] [cursor=pointer]: Rodada 16 17/06
+        - generic [ref=e66] [cursor=pointer]: Rodada 17 22/06
+        - generic [ref=e67] [cursor=pointer]: Rodada 18 06/07
+        - generic [ref=e68] [cursor=pointer]: Rodada 19 13/07
+      - generic [ref=e69]:
+        - button "Todas" [ref=e70] [cursor=pointer]
+        - button "Nenhuma" [ref=e71] [cursor=pointer]
+        - generic [ref=e72]:
+          - generic [ref=e73]: 🔒 Edição bloqueada
+          - button "Desbloquear" [ref=e74] [cursor=pointer]
+      - table [ref=e76]:
+        - rowgroup [ref=e77]:
+          - row "# Nome Rodada 17 22/06 Rodada 18 06/07 Rodada 19 13/07 Total" [ref=e78]:
+            - columnheader "#" [ref=e79]
+            - columnheader "Nome" [ref=e80]
+            - columnheader "Rodada 17 22/06" [ref=e81]
+            - columnheader "Rodada 18 06/07" [ref=e82]
+            - columnheader "Rodada 19 13/07" [ref=e83]
+            - columnheader "Total" [ref=e84]
+        - rowgroup [ref=e85]:
+          - row "🥇 Mateus 0 0 0 0" [ref=e86] [cursor=pointer]:
+            - cell "🥇" [ref=e87]
+            - cell "Mateus" [ref=e88]
+            - cell "0" [ref=e89]
+            - cell "0" [ref=e90]
+            - cell "0" [ref=e91]
+            - cell "0" [ref=e92]
+          - row "🥈 Henrique 0 0 0 0" [ref=e93] [cursor=pointer]:
+            - cell "🥈" [ref=e94]
+            - cell "Henrique" [ref=e95]
+            - cell "0" [ref=e96]
+            - cell "0" [ref=e97]
+            - cell "0" [ref=e98]
+            - cell "0" [ref=e99]
+          - row "🥉 China 0 0 0 0" [ref=e100] [cursor=pointer]:
+            - cell "🥉" [ref=e101]
+            - cell "China" [ref=e102]
+            - cell "0" [ref=e103]
+            - cell "0" [ref=e104]
+            - cell "0" [ref=e105]
+            - cell "0" [ref=e106]
+          - row "4 Ximas 0 0 0 0" [ref=e107] [cursor=pointer]:
+            - cell "4" [ref=e108]
+            - cell "Ximas" [ref=e109]
+            - cell "0" [ref=e110]
+            - cell "0" [ref=e111]
+            - cell "0" [ref=e112]
+            - cell "0" [ref=e113]
+          - row "5 Deivid 0 0 0 0" [ref=e114] [cursor=pointer]:
+            - cell "5" [ref=e115]
+            - cell "Deivid" [ref=e116]
+            - cell "0" [ref=e117]
+            - cell "0" [ref=e118]
+            - cell "0" [ref=e119]
+            - cell "0" [ref=e120]
+          - row "6 Morais 0 0 0 0" [ref=e121] [cursor=pointer]:
+            - cell "6" [ref=e122]
+            - cell "Morais" [ref=e123]
+            - cell "0" [ref=e124]
+            - cell "0" [ref=e125]
+            - cell "0" [ref=e126]
+            - cell "0" [ref=e127]
+          - row "7 Danilo Vieira 0 0 0 0" [ref=e128] [cursor=pointer]:
+            - cell "7" [ref=e129]
+            - cell "Danilo Vieira" [ref=e130]
+            - cell "0" [ref=e131]
+            - cell "0" [ref=e132]
+            - cell "0" [ref=e133]
+            - cell "0" [ref=e134]
+          - row "8 Andre 0 0 0 0" [ref=e135] [cursor=pointer]:
+            - cell "8" [ref=e136]
+            - cell "Andre" [ref=e137]
+            - cell "0" [ref=e138]
+            - cell "0" [ref=e139]
+            - cell "0" [ref=e140]
+            - cell "0" [ref=e141]
+          - row "9 Joel 0 0 0 0" [ref=e142] [cursor=pointer]:
+            - cell "9" [ref=e143]
+            - cell "Joel" [ref=e144]
+            - cell "0" [ref=e145]
+            - cell "0" [ref=e146]
+            - cell "0" [ref=e147]
+            - cell "0" [ref=e148]
+          - row "10 Rafael 0 0 0 0" [ref=e149] [cursor=pointer]:
+            - cell "10" [ref=e150]
+            - cell "Rafael" [ref=e151]
+            - cell "0" [ref=e152]
+            - cell "0" [ref=e153]
+            - cell "0" [ref=e154]
+            - cell "0" [ref=e155]
+          - row "11 Marcelo 0 0 0 0" [ref=e156] [cursor=pointer]:
+            - cell "11" [ref=e157]
+            - cell "Marcelo" [ref=e158]
+            - cell "0" [ref=e159]
+            - cell "0" [ref=e160]
+            - cell "0" [ref=e161]
+            - cell "0" [ref=e162]
+          - row "12 Chamma 0 0 0 0" [ref=e163] [cursor=pointer]:
+            - cell "12" [ref=e164]
+            - cell "Chamma" [ref=e165]
+            - cell "0" [ref=e166]
+            - cell "0" [ref=e167]
+            - cell "0" [ref=e168]
+            - cell "0" [ref=e169]
+          - row "13 Comando 0 0 0 0" [ref=e170] [cursor=pointer]:
+            - cell "13" [ref=e171]
+            - cell "Comando" [ref=e172]
+            - cell "0" [ref=e173]
+            - cell "0" [ref=e174]
+            - cell "0" [ref=e175]
+            - cell "0" [ref=e176]
+          - row "14 Para 0 0 0 0" [ref=e177] [cursor=pointer]:
+            - cell "14" [ref=e178]
+            - cell "Para" [ref=e179]
+            - cell "0" [ref=e180]
+            - cell "0" [ref=e181]
+            - cell "0" [ref=e182]
+            - cell "0" [ref=e183]
+          - row "15 Cicero 0 0 0 0" [ref=e184] [cursor=pointer]:
+            - cell "15" [ref=e185]
+            - cell "Cicero" [ref=e186]
+            - cell "0" [ref=e187]
+            - cell "0" [ref=e188]
+            - cell "0" [ref=e189]
+            - cell "0" [ref=e190]
+          - row "16 Claudinho 0 0 0 0" [ref=e191] [cursor=pointer]:
+            - cell "16" [ref=e192]
+            - cell "Claudinho" [ref=e193]
+            - cell "0" [ref=e194]
+            - cell "0" [ref=e195]
+            - cell "0" [ref=e196]
+            - cell "0" [ref=e197]
+  - contentinfo [ref=e33]: ♠ Poker Night Manager — API /api

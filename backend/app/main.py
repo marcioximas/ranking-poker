@@ -1,0 +1,68 @@
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from pathlib import Path
+from .database import engine, Base, SessionLocal
+from .routers import auth, config, players, rounds, ranking, financial
+from .seed import seed_db
+
+FRONTEND_DIST = Path(__file__).parent.parent.parent / "frontend" / "dist"
+
+ENV = os.getenv("ENV", "development")
+IS_PROD = ENV == "production"
+
+if IS_PROD:
+    render_url = os.getenv("RENDER_EXTERNAL_URL", "")
+    ALLOWED_ORIGINS = [render_url] if render_url else []
+else:
+    ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:3000"]
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title="Poker Night Manager API",
+    version="1.0.0",
+    docs_url=None if IS_PROD else "/docs",
+    redoc_url=None if IS_PROD else "/redoc",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+API = "/api"
+app.include_router(auth.router,      prefix=API)
+app.include_router(config.router,    prefix=API)
+app.include_router(players.router,   prefix=API)
+app.include_router(rounds.router,    prefix=API)
+app.include_router(ranking.router,   prefix=API)
+app.include_router(financial.router, prefix=API)
+
+
+@app.on_event("startup")
+def startup():
+    db = SessionLocal()
+    try:
+        seed_db(db)
+    finally:
+        db.close()
+
+
+@app.get("/health", tags=["Health"], summary="Health check")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+def serve_spa(full_path: str):
+    if FRONTEND_DIST.exists():
+        file = FRONTEND_DIST / full_path
+        if file.exists() and file.is_file():
+            return FileResponse(file)
+        return FileResponse(FRONTEND_DIST / "index.html")
+    return {"status": "ok"}
