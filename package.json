@@ -1,0 +1,17 @@
+{
+  "name": "poker",
+  "version": "1.0.0",
+  "description": "Aplicação web de gerenciamento de torneios de poker. Um único arquivo HTML auto-contido, sem dependências externas, que funciona localmente no navegador.",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}

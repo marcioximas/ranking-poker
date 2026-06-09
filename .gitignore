@@ -12,3 +12,9 @@ frontend/dist/
 # IDE
 .vscode/
 .idea/
+
+# Playwright
+node_modules/
+test-results/
+playwright-report/
+.playwright-mcp/

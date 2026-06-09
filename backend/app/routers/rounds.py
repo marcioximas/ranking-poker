@@ -61,6 +61,19 @@ def get_round(round_id: int, db: Session = Depends(get_db)):
     return round_
 
 
+@router.post("", response_model=RoundRead, status_code=201,
+             summary="Criar rodada histórica finalizada (para ranking)",
+             dependencies=[Depends(require_admin)])
+def create_round(data: RoundCreate, db: Session = Depends(get_db)):
+    label = data.label or _auto_label(db, data.date)
+    round_ = Round(label=label, date=data.date, is_current=False,
+                   is_active_in_ranking=True, is_finalized=True)
+    db.add(round_)
+    db.commit()
+    db.refresh(round_)
+    return round_
+
+
 @router.post("/current", response_model=RoundRead, status_code=201,
              summary="Iniciar nova rodada",
              dependencies=[Depends(require_admin)])

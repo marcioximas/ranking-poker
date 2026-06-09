@@ -26,6 +26,7 @@ export const playersApi = {
 
 export const roundsApi = {
   list:         ()               => http.get('/rounds'),
+  create:       (data)           => http.post('/rounds', data),
   getCurrent:   ()               => http.get('/rounds/current'),
   startCurrent: (data)           => http.post('/rounds/current', data),
   get:          (id)             => http.get(`/rounds/${id}`),

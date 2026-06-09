@@ -33,6 +33,7 @@
         </button>
         <button v-if="editMode" class="btn btn-primary btn-sm" @click="openAddRound">+ Nova Rodada</button>
         <button v-if="editMode" class="btn btn-danger btn-sm"  @click="openDeleteRound">✕ Excluir Rodada</button>
+        <button v-if="editMode" class="btn btn-ghost btn-sm"   @click="saveActiveRounds">💾 Salvar como padrão</button>
       </span>
     </div>
 
@@ -128,7 +129,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import StatCard from '../components/StatCard.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { useRanking } from '../stores/ranking'
@@ -150,22 +151,52 @@ const roundForm       = ref({ label: '', date: '' })
 
 const scoreModal = ref({ show: false, playerId: null, roundId: null, playerName: '', roundLabel: '', value: 0 })
 
+// Local filter state — never requires auth, just filters the table view.
+// Initialized from the backend's active_round_ids; defaults to ALL rounds when none are configured.
+const localActiveIds = ref(new Set())
+
+watch(ranking, (val) => {
+  if (!val) return
+  const ids = val.active_round_ids
+  localActiveIds.value = ids.length > 0
+    ? new Set(ids)
+    : new Set(val.rounds.map(r => r.id))
+}, { immediate: true })
+
 const allRounds    = computed(() => ranking.value?.rounds ?? [])
-const activeIds    = computed(() => new Set(ranking.value?.active_round_ids ?? []))
-const activeRounds = computed(() => allRounds.value.filter(r => activeIds.value.has(r.id)))
-const rows         = computed(() => ranking.value?.rows ?? [])
+const activeIds    = computed(() => localActiveIds.value)
+const activeRounds = computed(() => allRounds.value.filter(r => localActiveIds.value.has(r.id)))
+
+// Recompute totals locally so filtering is instant without a backend call.
+const rows = computed(() => {
+  const base = ranking.value?.rows ?? []
+  return base.map(row => ({
+    ...row,
+    total: [...localActiveIds.value].reduce((s, rid) => s + (row.scores[String(rid)] || 0), 0),
+  })).sort((a, b) => b.total - a.total)
+})
+
 const activePlayers = computed(() => rows.value.filter(r => r.total > 0).length)
 
 const score = (row, roundId) => row.scores[String(roundId)] ?? row.scores[roundId] ?? 0
 
 function toggleRound(id) {
-  const ids = new Set(activeIds.value)
+  const ids = new Set(localActiveIds.value)
   ids.has(id) ? ids.delete(id) : ids.add(id)
-  setActive([...ids])
+  localActiveIds.value = ids
 }
 
-function selectAll()  { setActive(allRounds.value.map(r => r.id)) }
-function selectNone() { setActive([]) }
+function selectAll()  { localActiveIds.value = new Set(allRounds.value.map(r => r.id)) }
+function selectNone() { localActiveIds.value = new Set() }
+
+async function saveActiveRounds() {
+  try {
+    await setActive([...localActiveIds.value])
+    toast('Configuração de rodadas salva ✓')
+  } catch {
+    toast('Erro ao salvar configuração.')
+  }
+}
 
 function toggleEdit() {
   if (editMode.value) { editMode.value = false; return }

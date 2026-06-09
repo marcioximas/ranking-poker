@@ -30,8 +30,9 @@
       Digite a senha para acessar esta área.
     </p>
     <div class="field">
-      <label>Senha</label>
+      <label for="auth-password">Senha</label>
       <input
+        id="auth-password"
         type="password"
         v-model="authPassword"
         autofocus

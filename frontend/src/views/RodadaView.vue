@@ -81,12 +81,12 @@
         <input type="date" v-model="startForm.date" />
       </div>
       <div class="field full">
-        <label>Label (opcional)</label>
-        <input type="text" v-model="startForm.label" placeholder="ex: Rodada 20 - 15/06" />
+        <label for="start-label">Label (opcional)</label>
+        <input id="start-label" type="text" v-model="startForm.label" placeholder="ex: Rodada 20 - 15/06" />
       </div>
       <div class="field full">
-        <label>Senha de administrador</label>
-        <input type="password" v-model="startForm.password" placeholder="••••••••" autofocus @keyup.enter="doStartRound" />
+        <label for="start-password">Senha de administrador</label>
+        <input id="start-password" type="password" v-model="startForm.password" placeholder="••••••••" autofocus @keyup.enter="doStartRound" />
       </div>
     </div>
     <div v-if="startError" style="color:var(--red);font-size:12px;margin-top:8px">{{ startError }}</div>
