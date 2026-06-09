@@ -32,7 +32,12 @@ def _calc_total(rp: RoundPlayer) -> int:
             tags=["Financeiro"])
 def get_financial(db: Session = Depends(get_db)):
     fin = _get_or_create_financial(db)
-    config = db.query(Config).first() or Config()
+    config = db.query(Config).first()
+    if not config:
+        config = Config()
+        db.add(config)
+        db.commit()
+        db.refresh(config)
 
     current_round = db.query(Round).filter(Round.is_current == True).first()
     rps: list[RoundPlayer] = current_round.round_players if current_round else []
