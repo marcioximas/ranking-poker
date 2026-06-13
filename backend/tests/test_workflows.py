@@ -25,20 +25,22 @@ class TestFullRoundLifecycle:
         client.post(f"/api/rounds/{round_id}/players", json={"player_id": p1["id"]}, headers=auth)
         client.post(f"/api/rounds/{round_id}/players", json={"player_id": p2["id"]}, headers=auth)
 
-        client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"pontos": 20, "presenca": 5}, headers=auth)
-        client.put(f"/api/rounds/{round_id}/players/{p2['id']}", json={"pontos": 10, "presenca": 5}, headers=auth)
+        client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"colocacao": 1, "presenca": 5}, headers=auth)
+        client.put(f"/api/rounds/{round_id}/players/{p2['id']}", json={"colocacao": 2, "presenca": 5}, headers=auth)
 
         r = client.post(f"/api/rounds/{round_id}/finalize", headers=auth)
         assert r.status_code == 200
         result = r.json()
         assert result["players_count"] == 2
-        assert result["ranking"][0]["player_id"] == p1["id"]  # 25 pts > 15 pts
+        assert result["ranking"][0]["player_id"] == p1["id"]  # 1st place scores more than 2nd
         assert result["ranking"][0]["prize"] == pytest.approx(result["premiacao_total"] * 0.7)
         assert result["ranking"][1]["prize"] == pytest.approx(result["premiacao_total"] * 0.3)
 
         ranking = client.get("/api/ranking").json()
         p1_row = next(row for row in ranking["rows"] if row["player_id"] == p1["id"])
-        assert p1_row["total"] == 25
+        # 2 buyins × R$50 = R$100 arrecadado; prize_pool = R$85
+        # 1st: int(85 × 0.70) // 10 = 59 // 10 = 5; presença = 5; total = 10
+        assert p1_row["total"] == 10
 
     def test_round_is_not_current_after_finalize(self, client, auth, two_players):
         p1, p2 = two_players
@@ -163,12 +165,14 @@ class TestMultipleRoundsRanking:
             round_id = client.post("/api/rounds/current", json={"label": label}, headers=auth).json()["id"]
             for p in [p1, p2]:
                 client.post(f"/api/rounds/{round_id}/players", json={"player_id": p["id"]}, headers=auth)
-            client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"pontos": 10}, headers=auth)
+            client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"colocacao": 1}, headers=auth)
             client.post(f"/api/rounds/{round_id}/finalize", headers=auth)
 
         ranking = client.get("/api/ranking").json()
         p1_row = next(row for row in ranking["rows"] if row["player_id"] == p1["id"])
-        assert p1_row["total"] == 20
+        # Each round: 2 buyins × R$50 = R$100; prize_pool = R$85
+        # 1st: int(85 × 0.70) // 10 = 5 pts × 2 rounds = 10
+        assert p1_row["total"] == 10
 
     def test_inactive_round_excluded_from_total(self, client, auth, two_players):
         p1, p2 = two_players
@@ -179,22 +183,23 @@ class TestMultipleRoundsRanking:
             round_ids.append(round_id)
             for p in [p1, p2]:
                 client.post(f"/api/rounds/{round_id}/players", json={"player_id": p["id"]}, headers=auth)
-            client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"pontos": 10}, headers=auth)
+            client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"colocacao": 1}, headers=auth)
             client.post(f"/api/rounds/{round_id}/finalize", headers=auth)
 
         client.put("/api/ranking/active-rounds", json={"round_ids": [round_ids[0]]}, headers=auth)
 
         ranking = client.get("/api/ranking").json()
         p1_row = next(row for row in ranking["rows"] if row["player_id"] == p1["id"])
-        assert p1_row["total"] == 10  # only first round
+        # Only first round active: int(85 × 0.70) // 10 = 5
+        assert p1_row["total"] == 5
 
     def test_ranking_sorted_by_total_descending(self, client, auth, two_players):
         p1, p2 = two_players
         round_id = client.post("/api/rounds/current", json={}, headers=auth).json()["id"]
         for p in [p1, p2]:
             client.post(f"/api/rounds/{round_id}/players", json={"player_id": p["id"]}, headers=auth)
-        client.put(f"/api/rounds/{round_id}/players/{p2['id']}", json={"pontos": 30}, headers=auth)
-        client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"pontos": 10}, headers=auth)
+        client.put(f"/api/rounds/{round_id}/players/{p2['id']}", json={"colocacao": 1}, headers=auth)
+        client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"colocacao": 2}, headers=auth)
         client.post(f"/api/rounds/{round_id}/finalize", headers=auth)
 
         ranking = client.get("/api/ranking").json()
@@ -206,7 +211,7 @@ class TestMultipleRoundsRanking:
         round_id = client.post("/api/rounds/current", json={}, headers=auth).json()["id"]
         for p in [p1, p2]:
             client.post(f"/api/rounds/{round_id}/players", json={"player_id": p["id"]}, headers=auth)
-        client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"pontos": 10}, headers=auth)
+        client.put(f"/api/rounds/{round_id}/players/{p1['id']}", json={"colocacao": 1}, headers=auth)
         client.post(f"/api/rounds/{round_id}/finalize", headers=auth)
 
         client.put(f"/api/ranking/{p1['id']}/{round_id}", json={"score": 99}, headers=auth)

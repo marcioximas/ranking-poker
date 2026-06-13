@@ -24,15 +24,16 @@ def test_ranking_shows_finalized_rounds_only(client, auth, current_round, player
 
 def test_ranking_scores_after_finalize(client, auth, current_round, player):
     client.post(f"/api/rounds/{current_round['id']}/players",
-                json={"player_id": player["id"], "pontos": 200, "presenca": 10,
+                json={"player_id": player["id"], "colocacao": 1, "presenca": 10,
                       "pontualidade": 15}, headers=auth)
-    client.get("/api/config")
     client.post(f"/api/rounds/{current_round['id']}/finalize", headers=auth)
 
     r = client.get("/api/ranking")
     data = r.json()
     row = next(row for row in data["rows"] if row["player_id"] == player["id"])
-    assert row["scores"][str(current_round["id"])] == 225  # 200+10+15
+    # 1 buyin × R$50 = R$50; prize_pool = R$42.5; 1st = int(42.5 × 0.70) // 10 = 2
+    # score = 2 (pontos) + 10 (presenca) + 15 (pontualidade) = 27
+    assert row["scores"][str(current_round["id"])] == 27
 
 
 def test_set_active_rounds_requires_auth(client, finalized_round):

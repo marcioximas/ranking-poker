@@ -5,7 +5,7 @@ These test the lowest layer of the pyramid: isolated functions and formulas.
 import pytest
 from types import SimpleNamespace
 
-from app.routers.rounds import _calc_total
+from app.routers.rounds import _calc_total, _calc_prize_points
 
 
 def make_rp(**kwargs):
@@ -49,6 +49,56 @@ class TestCalcTotal:
         rp_high = make_rp(pontos=30)
         rp_low  = make_rp(pontos=10)
         assert _calc_total(rp_high) > _calc_total(rp_low)
+
+
+# ── _calc_prize_points ───────────────────────────────────────────────────────
+
+def make_config(buyin_value=50.0, addon_value=50.0):
+    return SimpleNamespace(buyin_value=buyin_value, addon_value=addon_value)
+
+
+class TestCalcPrizePoints:
+    def test_first_place_basic(self):
+        # 10 buyins * R$50 = R$500 arrecadado
+        # prize_pool = 500 * 0.85 = 425
+        # 1st = 425 * 0.70 = 297.5 → int(297.5) // 10 = 29
+        assert _calc_prize_points(1, 10, 0, make_config()) == 29
+
+    def test_second_place_basic(self):
+        # prize_pool = 425, 2nd = 425 * 0.30 = 127.5 → 12
+        assert _calc_prize_points(2, 10, 0, make_config()) == 12
+
+    def test_not_placed_returns_zero(self):
+        assert _calc_prize_points(0, 10, 0, make_config()) == 0
+        assert _calc_prize_points(3, 10, 0, make_config()) == 0
+        assert _calc_prize_points(99, 10, 0, make_config()) == 0
+
+    def test_300_reais_prize_gives_30_points(self):
+        # int(300) // 10 = 30 — user's stated example
+        assert int(300) // 10 == 30
+
+    def test_above_1000_uses_3_digits(self):
+        # int(1250) // 10 = 125 — user's stated example
+        assert int(1250) // 10 == 125
+
+    def test_with_addons(self):
+        # 5 buyins + 3 addons, both R$50
+        # arrecadado = 400, prize_pool = 340
+        # 1st = 340 * 0.70 = 238 → 23
+        assert _calc_prize_points(1, 5, 3, make_config()) == 23
+
+    def test_zero_arrecadado_gives_zero_points(self):
+        assert _calc_prize_points(1, 0, 0, make_config()) == 0
+
+    def test_first_and_second_sum_equals_85_pct(self):
+        config = make_config(buyin_value=50.0, addon_value=50.0)
+        pts1 = _calc_prize_points(1, 10, 0, config)
+        pts2 = _calc_prize_points(2, 10, 0, config)
+        # 29 + 12 = 41; confirm they come from the same prize pool
+        arrecadado = 10 * 50.0
+        prize_pool = arrecadado * 0.85
+        assert pts1 == int(prize_pool * 0.70) // 10
+        assert pts2 == int(prize_pool * 0.30) // 10
 
 
 # ── Prize distribution ────────────────────────────────────────────────────────

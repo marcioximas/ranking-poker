@@ -39,6 +39,7 @@
               <th style="width:140px">Nome</th>
               <th>Buy-in/Rebuy</th>
               <th>Addon</th>
+              <th>Colocação</th>
               <th>Pontos</th>
               <th>Presença</th>
               <th>Bônus ITM</th>
@@ -58,12 +59,13 @@
               <td class="name">{{ p.player_name }}</td>
               <td :class="p.buyin ? 'num' : 'zero'">{{ p.buyin }}</td>
               <td :class="p.addon ? 'num' : 'zero'">{{ p.addon }}</td>
-              <td :class="p.pontos ? 'num' : 'zero'">{{ p.pontos }}</td>
+              <td :class="p.colocacao ? 'num' : 'zero'">{{ p.colocacao === 1 ? '🥇' : p.colocacao === 2 ? '🥈' : '—' }}</td>
+              <td :class="p.calcPontos ? 'num' : 'zero'">{{ p.calcPontos }}</td>
               <td :class="p.presenca ? 'num' : 'zero'">{{ p.presenca }}</td>
               <td :class="p.bonus ? 'num' : 'zero'">{{ p.bonus }}</td>
               <td :class="p.indicacao ? 'num' : 'zero'">{{ p.indicacao }}</td>
               <td :class="p.pontualidade ? 'num' : 'zero'">{{ p.pontualidade }}</td>
-              <td class="total">{{ p.total }}</td>
+              <td class="total">{{ p.calcTotal }}</td>
             </tr>
           </tbody>
         </table>
@@ -129,8 +131,16 @@
         <input type="number" v-model.number="form.addon" min="0" />
       </div>
       <div class="field">
-        <label>Pontos (chips finais)</label>
-        <input type="number" v-model.number="form.pontos" min="0" />
+        <label>Colocação</label>
+        <select v-model.number="form.colocacao">
+          <option :value="0">— Não colocado</option>
+          <option :value="1">🥇 1º lugar</option>
+          <option :value="2">🥈 2º lugar</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Pontos (calculado)</label>
+        <input type="number" :value="previewPontos" disabled style="opacity:0.5;cursor:not-allowed" />
       </div>
       <div class="field">
         <label>Bônus ITM</label>
@@ -250,15 +260,15 @@
     <template v-if="!finalizeResult">
       <h2>Finalizar Rodada</h2>
       <div class="stat-grid" style="margin-bottom:16px">
-        <StatCard label="CAIXA DA NOITE" :value="brl(caixaNoite)" variant="green" />
-        <StatCard label="PREMIAÇÃO ({{ config?.prize_pct || 70 }}%)" :value="brl(premiacao)" />
+        <StatCard label="CAIXA DA NOITE"  :value="brl(caixaNoite)"  variant="green" />
+        <StatCard label="PREMIAÇÃO (85%)" :value="brl(premiacao)" />
       </div>
       <div class="fin-row">
-        <span class="fin-lbl">🥇 {{ sortedPlayers[0]?.player_name || '—' }}</span>
+        <span class="fin-lbl">🥇 {{ player1st?.player_name || '— Não definido' }}</span>
         <span class="fin-val gold">{{ brl(premiacao * 0.7) }}</span>
       </div>
       <div class="fin-row">
-        <span class="fin-lbl">🥈 {{ sortedPlayers[1]?.player_name || '—' }}</span>
+        <span class="fin-lbl">🥈 {{ player2nd?.player_name || '— Não definido' }}</span>
         <span class="fin-val">{{ brl(premiacao * 0.3) }}</span>
       </div>
       <div class="modal-actions">
@@ -401,16 +411,12 @@ async function doCreateRound() {
   }
 }
 const form = ref({
-  name: '', buyin: 1, addon: 0, pontos: 0,
+  name: '', buyin: 1, addon: 0, colocacao: 0,
   presenca: 10, bonus: 0, indicacao: 0, pontualidade: 15,
 })
 
 const presencaPts  = computed(() => config.value?.presence_points    ?? 10)
 const pontPts      = computed(() => config.value?.punctuality_points  ?? 15)
-
-const sortedPlayers = computed(() =>
-  [...roundPlayers.value].sort((a, b) => b.total - a.total)
-)
 
 const totalBuyins = computed(() => roundPlayers.value.reduce((s, p) => s + p.buyin, 0))
 const totalAddons = computed(() => roundPlayers.value.reduce((s, p) => s + p.addon, 0))
@@ -418,8 +424,43 @@ const caixaNoite  = computed(() =>
   totalBuyins.value * (config.value?.buyin_value ?? 50) +
   totalAddons.value * (config.value?.addon_value ?? 50)
 )
-const premiacao = computed(() => caixaNoite.value * ((config.value?.prize_pct ?? 70) / 100))
+const premiacao = computed(() => caixaNoite.value * 0.85)
+
+// Calculates ranking points from placement using the prize pool formula.
+// Points = int(prize_reais) // 10 → 2 digits for <R$1000, 3 for ≥R$1000.
+function calcRoundPontos(colocacao) {
+  const prizePool = caixaNoite.value * 0.85
+  if (colocacao === 1) return Math.floor(prizePool * 0.70 / 10)
+  if (colocacao === 2) return Math.floor(prizePool * 0.30 / 10)
+  return 0
+}
+
+// Live preview for the form (includes the player being added if not editing)
+const previewPontos = computed(() => {
+  const buyin_v = config.value?.buyin_value ?? 50
+  const addon_v = config.value?.addon_value ?? 50
+  let buyins = totalBuyins.value
+  let addons = totalAddons.value
+  if (!editingPlayer.value) { buyins += form.value.buyin || 0; addons += form.value.addon || 0 }
+  const prizePool = (buyins * buyin_v + addons * addon_v) * 0.85
+  if (form.value.colocacao === 1) return Math.floor(prizePool * 0.70 / 10)
+  if (form.value.colocacao === 2) return Math.floor(prizePool * 0.30 / 10)
+  return 0
+})
+
+const sortedPlayers = computed(() =>
+  [...roundPlayers.value]
+    .map(p => {
+      const calcPontos = calcRoundPontos(p.colocacao || 0)
+      const calcTotal  = calcPontos + (p.presenca || 0) + (p.bonus || 0) + (p.indicacao || 0) + (p.pontualidade || 0)
+      return { ...p, calcPontos, calcTotal }
+    })
+    .sort((a, b) => b.calcTotal - a.calcTotal)
+)
+
 const leader    = computed(() => sortedPlayers.value[0] ?? null)
+const player1st = computed(() => roundPlayers.value.find(p => (p.colocacao || 0) === 1) ?? null)
+const player2nd = computed(() => roundPlayers.value.find(p => (p.colocacao || 0) === 2) ?? null)
 
 const availablePlayers = computed(() => {
   const inRound = new Set(roundPlayers.value.map(p => p.player_id))
@@ -433,7 +474,7 @@ const brl = (v) => {
 
 function resetForm() {
   form.value = {
-    name: '', buyin: 1, addon: 0, pontos: 0,
+    name: '', buyin: 1, addon: 0, colocacao: 0,
     presenca: presencaPts.value, bonus: 0, indicacao: 0,
     pontualidade: pontPts.value,
   }
@@ -452,7 +493,7 @@ function openEdit() {
   editingPlayer.value = p
   form.value = {
     name: p.player_name,
-    buyin: p.buyin, addon: p.addon, pontos: p.pontos,
+    buyin: p.buyin, addon: p.addon, colocacao: p.colocacao || 0,
     presenca: p.presenca, bonus: p.bonus, indicacao: p.indicacao,
     pontualidade: p.pontualidade,
   }
@@ -493,7 +534,8 @@ async function doSavePlayer() {
     if (editingPlayer.value) {
       await updatePlayer(editingPlayer.value.player_id, {
         buyin: form.value.buyin, addon: form.value.addon,
-        pontos: form.value.pontos, presenca: form.value.presenca,
+        colocacao: form.value.colocacao,
+        presenca: form.value.presenca,
         bonus: form.value.bonus, indicacao: form.value.indicacao,
         pontualidade: form.value.pontualidade,
       })
@@ -502,7 +544,8 @@ async function doSavePlayer() {
       await addPlayer({
         name: form.value.name.trim(),
         buyin: form.value.buyin, addon: form.value.addon,
-        pontos: form.value.pontos, presenca: form.value.presenca,
+        colocacao: form.value.colocacao,
+        presenca: form.value.presenca,
         bonus: form.value.bonus, indicacao: form.value.indicacao,
         pontualidade: form.value.pontualidade,
       })

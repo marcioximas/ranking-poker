@@ -48,7 +48,7 @@ app.include_router(import_round.router, prefix=API)
 
 @app.on_event("startup")
 def startup():
-    # Migrate existing SQLite DBs: add new player columns if missing
+    # Migrate existing SQLite DBs: add new columns if missing
     if engine.url.get_dialect().name == "sqlite":
         with engine.connect() as conn:
             cols = {row[1] for row in conn.execute(text("PRAGMA table_info(players)"))}
@@ -56,6 +56,10 @@ def startup():
                 conn.execute(text("ALTER TABLE players ADD COLUMN telefone VARCHAR"))
             if "pix" not in cols:
                 conn.execute(text("ALTER TABLE players ADD COLUMN pix VARCHAR"))
+
+            rp_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(round_players)"))}
+            if "colocacao" not in rp_cols:
+                conn.execute(text("ALTER TABLE round_players ADD COLUMN colocacao INTEGER DEFAULT 0"))
             conn.commit()
 
     db = SessionLocal()

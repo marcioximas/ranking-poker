@@ -78,6 +78,7 @@ class RoundPlayerCreate(BaseModel):
     player_id: int
     buyin: int = Field(1, ge=0)
     addon: int = Field(0, ge=0)
+    colocacao: int = Field(0, ge=0)
     pontos: int = Field(0, ge=0)
     presenca: int = Field(0, ge=0)
     bonus: int = Field(0, ge=0)
@@ -88,6 +89,7 @@ class RoundPlayerCreate(BaseModel):
 class RoundPlayerUpdate(BaseModel):
     buyin: Optional[int] = Field(None, ge=0)
     addon: Optional[int] = Field(None, ge=0)
+    colocacao: Optional[int] = Field(None, ge=0)
     pontos: Optional[int] = Field(None, ge=0)
     presenca: Optional[int] = Field(None, ge=0)
     bonus: Optional[int] = Field(None, ge=0)
@@ -102,6 +104,7 @@ class RoundPlayerRead(BaseModel):
     player_name: str
     buyin: int
     addon: int
+    colocacao: int
     pontos: int
     presenca: int
     bonus: int

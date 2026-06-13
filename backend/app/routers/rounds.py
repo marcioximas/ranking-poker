@@ -13,6 +13,23 @@ from ..schemas import (
 router = APIRouter(prefix="/rounds", tags=["Rodadas"])
 
 
+def _calc_prize_points(colocacao: int, total_buyins: int, total_addons: int, config: Config) -> int:
+    """Convert a placement into ranking points based on the prize pool formula.
+
+    85% of arrecadado goes to prizes: 70% to 1st, 30% to 2nd.
+    Points = int(prize_reais) // 10  (first 2 digits for <R$1000, 3 for ≥R$1000).
+    """
+    arrecadado = total_buyins * (config.buyin_value or 0) + total_addons * (config.addon_value or 0)
+    prize_pool = arrecadado * 0.85
+    if colocacao == 1:
+        prize = prize_pool * 0.70
+    elif colocacao == 2:
+        prize = prize_pool * 0.30
+    else:
+        return 0
+    return int(prize) // 10
+
+
 def _calc_total(rp: RoundPlayer) -> int:
     return (rp.pontos or 0) + (rp.presenca or 0) + (rp.bonus or 0) + (rp.indicacao or 0) + (rp.pontualidade or 0)
 
@@ -25,6 +42,7 @@ def _to_read(rp: RoundPlayer) -> RoundPlayerRead:
         player_name=rp.player.name,
         buyin=rp.buyin,
         addon=rp.addon,
+        colocacao=rp.colocacao or 0,
         pontos=rp.pontos,
         presenca=rp.presenca,
         bonus=rp.bonus,
@@ -195,8 +213,13 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
     total_buyins = sum(rp.buyin for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
     caixa_noite = total_buyins * config.buyin_value + total_addons * config.addon_value
-    premiacao_total = caixa_noite * (config.prize_pct / 100)
-    ranking_noite = caixa_noite * (config.ranking_pct / 100)
+    premiacao_total = caixa_noite * 0.85
+    ranking_noite = caixa_noite * 0.075
+
+    # Calculate pontos from colocacao using the prize pool formula
+    for rp in rps:
+        rp.pontos = _calc_prize_points(rp.colocacao or 0, total_buyins, total_addons, config)
+    db.commit()
 
     for rp in rps:
         score_val = _calc_total(rp)
