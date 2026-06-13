@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pathlib import Path
 from .database import engine, Base, SessionLocal
-from .routers import auth, config, players, rounds, ranking, financial
+from .routers import auth, config, players, rounds, ranking, financial, import_round
 from .seed import seed_db
 
 FRONTEND_DIST = Path(__file__).parent.parent.parent / "frontend" / "dist"
@@ -41,7 +41,8 @@ app.include_router(config.router,    prefix=API)
 app.include_router(players.router,   prefix=API)
 app.include_router(rounds.router,    prefix=API)
 app.include_router(ranking.router,   prefix=API)
-app.include_router(financial.router, prefix=API)
+app.include_router(financial.router,     prefix=API)
+app.include_router(import_round.router, prefix=API)
 
 
 @app.on_event("startup")

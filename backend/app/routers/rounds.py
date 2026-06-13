@@ -186,7 +186,12 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
     if not rps:
         raise HTTPException(400, "Nenhum jogador na rodada.")
 
-    config = db.query(Config).first() or Config()
+    config = db.query(Config).first()
+    if not config:
+        config = Config()
+        db.add(config)
+        db.commit()
+        db.refresh(config)
     total_buyins = sum(rp.buyin for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
     caixa_noite = total_buyins * config.buyin_value + total_addons * config.addon_value

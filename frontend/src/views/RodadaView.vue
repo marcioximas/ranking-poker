@@ -15,7 +15,10 @@
         <div class="empty-icon">♠</div>
         <p>Nenhuma rodada em andamento.<br>Inicie uma nova rodada para começar.</p>
         <br>
-        <button class="btn btn-gold" @click="showStartModal = true">+ Iniciar Rodada</button>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-gold" @click="showStartModal = true">+ Iniciar Rodada</button>
+          <button class="btn btn-primary" @click="openImport">📄 Importar via PDF</button>
+        </div>
       </div>
     </template>
 
@@ -161,6 +164,87 @@
     </div>
   </BaseModal>
 
+  <!-- Import PDF Modal -->
+  <BaseModal v-if="showImportModal" @close="closeImport">
+    <!-- Step 1: form -->
+    <template v-if="importStep === 'form'">
+      <h2>Importar Rodada via PDF</h2>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">
+        Selecione um PDF com uma tabela contendo a coluna <strong>Jogador</strong> e os pontos da rodada.
+      </p>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Arquivo PDF</label>
+          <input type="file" accept=".pdf" @change="onFileChange" style="color:var(--text)" />
+        </div>
+        <div class="field full">
+          <label>Label da rodada (opcional)</label>
+          <input type="text" v-model="importForm.label" placeholder="ex: Rodada 20 - 15/06" />
+        </div>
+        <div class="field full">
+          <label for="import-password">Senha de administrador</label>
+          <input id="import-password" type="password" v-model="importForm.password" placeholder="••••••••" autofocus @keyup.enter="doAnalyze" />
+        </div>
+      </div>
+      <div v-if="importError" style="color:var(--red);font-size:12px;margin-top:8px">{{ importError }}</div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" @click="doAnalyze" :disabled="importing">
+          {{ importing ? 'Analisando...' : '🔍 Analisar PDF' }}
+        </button>
+        <button class="btn btn-ghost" @click="closeImport">Cancelar</button>
+      </div>
+    </template>
+
+    <!-- Step 2: preview -->
+    <template v-else-if="importStep === 'preview'">
+      <h2>Preview da Importação</h2>
+
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">
+        {{ importPreview.matched.length }} jogador(es) reconhecido(s)
+        <span v-if="importPreview.unmatched.length" style="color:var(--red)">
+          · {{ importPreview.unmatched.length }} não encontrado(s)
+        </span>
+      </p>
+
+      <div style="max-height:280px;overflow-y:auto;margin-bottom:12px">
+        <table style="width:100%;font-size:12px">
+          <thead>
+            <tr style="color:var(--text-dim)">
+              <th style="text-align:left;padding:4px 8px">Jogador</th>
+              <th>Buy-in</th><th>Addon</th><th>Pts</th>
+              <th>Pres.</th><th>Bônus</th><th>Pont.</th><th>Ind.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="p in importPreview.matched" :key="p.player_id" style="border-top:1px solid var(--border)">
+              <td style="padding:4px 8px">{{ p.player_name }}</td>
+              <td style="text-align:center">{{ p.buyin }}</td>
+              <td style="text-align:center">{{ p.addon }}</td>
+              <td style="text-align:center">{{ p.pontos }}</td>
+              <td style="text-align:center">{{ p.presenca }}</td>
+              <td style="text-align:center">{{ p.bonus }}</td>
+              <td style="text-align:center">{{ p.pontualidade }}</td>
+              <td style="text-align:center">{{ p.indicacao }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="importPreview.unmatched.length" style="margin-bottom:12px">
+        <p style="font-size:12px;color:var(--red);margin-bottom:4px">Nomes não encontrados no cadastro:</p>
+        <p style="font-size:12px;color:var(--text-dim)">{{ importPreview.unmatched.join(', ') }}</p>
+      </div>
+
+      <div v-if="importError" style="color:var(--red);font-size:12px;margin-bottom:8px">{{ importError }}</div>
+      <div class="modal-actions">
+        <button class="btn btn-gold" @click="doCreateRound" :disabled="importing">
+          {{ importing ? 'Criando...' : '✓ Criar Rodada' }}
+        </button>
+        <button class="btn btn-ghost" @click="importStep = 'form'">← Voltar</button>
+      </div>
+    </template>
+  </BaseModal>
+
   <!-- Finalize Modal -->
   <BaseModal v-if="showFinalize" @close="showFinalize = false">
     <template v-if="!finalizeResult">
@@ -236,6 +320,78 @@ const formError       = ref('')
 const startError      = ref('')
 
 const startForm = ref({ label: '', date: '', password: '' })
+
+// ── PDF Import ───────────────────────────────────────────────────────────────
+const showImportModal = ref(false)
+const importStep      = ref('form')   // 'form' | 'preview'
+const importForm      = ref({ label: '', password: '' })
+const importFile      = ref(null)
+const importPreview   = ref({ matched: [], unmatched: [] })
+const importError     = ref('')
+const importing       = ref(false)
+
+function openImport() {
+  importStep.value    = 'form'
+  importForm.value    = { label: '', password: '' }
+  importFile.value    = null
+  importPreview.value = { matched: [], unmatched: [] }
+  importError.value   = ''
+  showImportModal.value = true
+}
+
+function closeImport() {
+  showImportModal.value = false
+}
+
+function onFileChange(event) {
+  importFile.value = event.target.files[0] || null
+}
+
+async function doAnalyze() {
+  importError.value = ''
+  if (!importFile.value)          { importError.value = 'Selecione um arquivo PDF.'; return }
+  if (!importForm.value.password) { importError.value = 'Informe a senha de administrador.'; return }
+
+  importing.value = true
+  try {
+    const { data: auth } = await authApi.verify(importForm.value.password)
+    if (!auth.valid) { importError.value = 'Senha incorreta.'; return }
+    setAdminPassword(importForm.value.password)
+
+    const fd = new FormData()
+    fd.append('file', importFile.value)
+    fd.append('label', importForm.value.label || '')
+    fd.append('dry_run', 'true')
+
+    const { data } = await roundsApi.importPdf(fd)
+    importPreview.value = data
+    importStep.value = 'preview'
+  } catch (e) {
+    importError.value = e.response?.data?.detail || 'Erro ao analisar o PDF.'
+  } finally {
+    importing.value = false
+  }
+}
+
+async function doCreateRound() {
+  importError.value = ''
+  importing.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', importFile.value)
+    fd.append('label', importForm.value.label || '')
+    fd.append('dry_run', 'false')
+
+    const { data } = await roundsApi.importPdf(fd)
+    await fetchCurrent()
+    closeImport()
+    toast(`Rodada "${data.round_label}" criada com ${data.players_added} jogadores! ✓`)
+  } catch (e) {
+    importError.value = e.response?.data?.detail || 'Erro ao criar rodada.'
+  } finally {
+    importing.value = false
+  }
+}
 const form = ref({
   name: '', buyin: 1, addon: 0, pontos: 0,
   presenca: 10, bonus: 0, indicacao: 0, pontualidade: 15,

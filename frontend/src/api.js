@@ -37,6 +37,9 @@ export const roundsApi = {
   updatePlayer: (id, pid, data)  => http.put(`/rounds/${id}/players/${pid}`, data),
   removePlayer: (id, pid)        => http.delete(`/rounds/${id}/players/${pid}`),
   finalize:     (id)             => http.post(`/rounds/${id}/finalize`),
+  importPdf:    (formData)       => http.post('/rounds/import-pdf', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
 }
 
 export const rankingApi = {
