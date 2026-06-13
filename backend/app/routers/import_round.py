@@ -147,6 +147,10 @@ async def import_round_from_pdf(
     if not content:
         raise HTTPException(400, "O arquivo PDF está vazio.")
 
+    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+    if len(content) > MAX_SIZE:
+        raise HTTPException(413, "O arquivo PDF não pode ser maior que 5 MB.")
+
     raw_rows = _parse_pdf(content)
     if not raw_rows:
         raise HTTPException(
@@ -172,6 +176,9 @@ async def import_round_from_pdf(
         raise HTTPException(409, "Já existe uma rodada em andamento. Finalize-a primeiro.")
 
     round_label = label or f"Rodada {db.query(Round).count() + 1}"
+
+    if db.query(Round).filter(Round.label == round_label).first():
+        raise HTTPException(409, f"Já existe uma rodada com o label '{round_label}'.")
     round_ = Round(
         label=round_label,
         is_current=True,

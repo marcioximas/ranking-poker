@@ -344,7 +344,15 @@ function closeImport() {
 }
 
 function onFileChange(event) {
-  importFile.value = event.target.files[0] || null
+  const file = event.target.files[0] || null
+  if (file && file.size > 5 * 1024 * 1024) {
+    importError.value = 'O arquivo PDF não pode ser maior que 5 MB.'
+    event.target.value = ''
+    importFile.value = null
+    return
+  }
+  importError.value = ''
+  importFile.value = file
 }
 
 async function doAnalyze() {
