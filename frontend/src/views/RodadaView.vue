@@ -59,7 +59,7 @@
               <td class="name">{{ p.player_name }}</td>
               <td :class="p.buyin ? 'num' : 'zero'">{{ p.buyin }}</td>
               <td :class="p.addon ? 'num' : 'zero'">{{ p.addon }}</td>
-              <td :class="p.colocacao ? 'num' : 'zero'">{{ p.colocacao === 1 ? '🥇' : p.colocacao === 2 ? '🥈' : '—' }}</td>
+              <td :class="p.colocacao ? 'num' : 'zero'">{{ p.colocacao === 1 ? '🥇' : p.colocacao === 2 ? '🥈' : p.colocacao === 3 ? '🥉' : p.colocacao >= 4 ? p.colocacao + 'º' : '—' }}</td>
               <td :class="p.calcPontos ? 'num' : 'zero'">{{ p.calcPontos }}</td>
               <td :class="p.presenca ? 'num' : 'zero'">{{ p.presenca }}</td>
               <td :class="p.bonus ? 'num' : 'zero'">{{ p.bonus }}</td>
@@ -133,9 +133,10 @@
       <div class="field">
         <label>Colocação</label>
         <select v-model.number="form.colocacao">
-          <option :value="0">— Não colocado</option>
-          <option :value="1">🥇 1º lugar</option>
-          <option :value="2">🥈 2º lugar</option>
+          <option :value="0" disabled>— Selecione —</option>
+          <option v-for="pos in roundPlayers.length" :key="pos" :value="pos">
+            {{ pos === 1 ? '🥇 1º lugar' : pos === 2 ? '🥈 2º lugar' : pos === 3 ? '🥉 3º lugar' : pos + 'º lugar' }}
+          </option>
         </select>
       </div>
       <div class="field">
@@ -528,6 +529,7 @@ async function doStartRound() {
 
 async function doSavePlayer() {
   if (!form.value.name.trim()) { formError.value = 'Nome é obrigatório.'; return }
+  if (!form.value.colocacao) { formError.value = 'Colocação é obrigatória.'; return }
   saving.value = true
   formError.value = ''
   try {
