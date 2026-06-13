@@ -157,10 +157,7 @@ const localActiveIds = ref(new Set())
 
 watch(ranking, (val) => {
   if (!val) return
-  const ids = val.active_round_ids
-  localActiveIds.value = ids.length > 0
-    ? new Set(ids)
-    : new Set(val.rounds.map(r => r.id))
+  localActiveIds.value = new Set(val.rounds.map(r => r.id))
 }, { immediate: true })
 
 const allRounds    = computed(() => ranking.value?.rounds ?? [])
