@@ -59,7 +59,7 @@
         />
       </div>
       <div class="field full">
-        <label>Telefone</label>
+        <label>Telefone *</label>
         <input
           type="tel"
           v-model="form.telefone"
@@ -68,7 +68,7 @@
         />
       </div>
       <div class="field full">
-        <label>PIX</label>
+        <label>PIX *</label>
         <input
           type="text"
           v-model="form.pix"
@@ -141,6 +141,14 @@ function closeModal() {
 async function doSave() {
   if (!form.value.name.trim()) {
     formError.value = 'O nome é obrigatório.'
+    return
+  }
+  if (!form.value.telefone.trim()) {
+    formError.value = 'O telefone é obrigatório.'
+    return
+  }
+  if (!form.value.pix.trim()) {
+    formError.value = 'O PIX é obrigatório.'
     return
   }
   saving.value = true
