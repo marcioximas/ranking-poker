@@ -296,8 +296,25 @@
           {{ entry.prize > 0 ? brl(entry.prize) : '—' }}
         </span>
       </div>
+      <!-- PIX section -->
+      <div v-if="pixCodes.length" style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Cobranças via PIX (Marcio)</p>
+        <div v-for="item in pixCodes" :key="item.player_name" class="fin-row" style="align-items:center;gap:8px">
+          <span class="fin-lbl" style="flex:1">{{ item.player_name }}</span>
+          <span style="color:var(--gold);font-size:13px;min-width:70px;text-align:right">{{ brl(item.valor) }}</span>
+          <button
+            class="btn btn-ghost"
+            style="padding:4px 10px;font-size:11px;min-width:70px"
+            @click="navigator.clipboard.writeText(item.code).then(() => { item.copied = true; setTimeout(() => item.copied = false, 2000) })"
+          >{{ item.copied ? '✓ Copiado' : 'Copiar PIX' }}</button>
+        </div>
+      </div>
+      <div v-else-if="finalizeResult" style="margin-top:12px;font-size:12px;color:var(--text-dim)">
+        Cadastre a chave PIX no perfil de Marcio para gerar cobranças automáticas.
+      </div>
+
       <div class="modal-actions">
-        <button class="btn btn-gold" @click="showFinalize = false; finalizeResult = null">Fechar</button>
+        <button class="btn btn-gold" @click="showFinalize = false; finalizeResult = null; pixCodes = []">Fechar</button>
       </div>
     </template>
   </BaseModal>
@@ -326,6 +343,7 @@ const showPlayerModal = ref(false)
 const showFinalize    = ref(false)
 const editingPlayer   = ref(null)
 const finalizeResult  = ref(null)
+const pixCodes        = ref([])
 const saving          = ref(false)
 const finalizing      = ref(false)
 const starting        = ref(false)
@@ -579,11 +597,48 @@ function doRemove() {
   })
 }
 
+function gerarPixCopiaCola(chave, nome, valor) {
+  function fld(id, value) {
+    return `${id}${String(value.length).padStart(2, '0')}${value}`
+  }
+  const mai = fld('00', 'br.gov.bcb.pix') + fld('01', chave)
+  let p = fld('00', '01') + fld('01', '12') + fld('26', mai) +
+          fld('52', '0000') + fld('53', '986') +
+          (valor > 0 ? fld('54', valor.toFixed(2)) : '') +
+          fld('58', 'BR') + fld('59', nome.substring(0, 25)) +
+          fld('60', 'SAO PAULO') + '6304'
+  let crc = 0xFFFF
+  for (let i = 0; i < p.length; i++) {
+    crc ^= p.charCodeAt(i) << 8
+    for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF
+  }
+  return p + crc.toString(16).toUpperCase().padStart(4, '0')
+}
+
 function doFinalize() {
   requireAuth(async () => {
+    // Snapshot buy-ins and Marcio's PIX before round data is cleared
+    const marcio = allPlayers.value.find(p => p.name.toLowerCase() === 'marcio')
+    const snapshot = roundPlayers.value.map(p => ({
+      player_name: p.player_name,
+      valor: p.buyin * (config.value?.buyin_value || 50) + p.addon * (config.value?.addon_value || 50),
+    }))
+
     finalizing.value = true
     try {
       finalizeResult.value = await finalize()
+      if (marcio?.pix) {
+        pixCodes.value = snapshot
+          .filter(p => p.valor > 0)
+          .map(p => ({
+            player_name: p.player_name,
+            valor: p.valor,
+            code: gerarPixCopiaCola(marcio.pix, 'Marcio', p.valor),
+            copied: false,
+          }))
+      } else {
+        pixCodes.value = []
+      }
       toast('Rodada finalizada e salva no ranking! ✓')
     } catch (e) {
       toast(e.response?.data?.detail || 'Erro ao finalizar.')
