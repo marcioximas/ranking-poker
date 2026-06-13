@@ -311,10 +311,12 @@ import { useRounds } from '../stores/rounds'
 import { useConfig } from '../stores/config'
 import { useToast } from '../composables/useToast'
 import { authApi, setAdminPassword } from '../api'
+import { useAuth } from '../composables/useAuth'
 
 const { currentRound, roundPlayers, allPlayers, fetchCurrent, fetchAllPlayers, startRound, addPlayer, updatePlayer, removePlayer, finalize } = useRounds()
 const { config, fetch: fetchConfig } = useConfig()
 const { show: toast } = useToast()
+const { requireAuth } = useAuth()
 
 const medals = ['🥇', '🥈', '🥉']
 
@@ -530,60 +532,66 @@ async function doStartRound() {
 async function doSavePlayer() {
   if (!form.value.name.trim()) { formError.value = 'Nome é obrigatório.'; return }
   if (!form.value.colocacao) { formError.value = 'Colocação é obrigatória.'; return }
-  saving.value = true
   formError.value = ''
-  try {
-    if (editingPlayer.value) {
-      await updatePlayer(editingPlayer.value.player_id, {
-        buyin: form.value.buyin, addon: form.value.addon,
-        colocacao: form.value.colocacao,
-        presenca: form.value.presenca,
-        bonus: form.value.bonus, indicacao: form.value.indicacao,
-        pontualidade: form.value.pontualidade,
-      })
-      toast('Jogador atualizado! ✓')
-    } else {
-      await addPlayer({
-        name: form.value.name.trim(),
-        buyin: form.value.buyin, addon: form.value.addon,
-        colocacao: form.value.colocacao,
-        presenca: form.value.presenca,
-        bonus: form.value.bonus, indicacao: form.value.indicacao,
-        pontualidade: form.value.pontualidade,
-      })
-      toast('Jogador adicionado! ✓')
+  requireAuth(async () => {
+    saving.value = true
+    try {
+      if (editingPlayer.value) {
+        await updatePlayer(editingPlayer.value.player_id, {
+          buyin: form.value.buyin, addon: form.value.addon,
+          colocacao: form.value.colocacao,
+          presenca: form.value.presenca,
+          bonus: form.value.bonus, indicacao: form.value.indicacao,
+          pontualidade: form.value.pontualidade,
+        })
+        toast('Jogador atualizado! ✓')
+      } else {
+        await addPlayer({
+          name: form.value.name.trim(),
+          buyin: form.value.buyin, addon: form.value.addon,
+          colocacao: form.value.colocacao,
+          presenca: form.value.presenca,
+          bonus: form.value.bonus, indicacao: form.value.indicacao,
+          pontualidade: form.value.pontualidade,
+        })
+        toast('Jogador adicionado! ✓')
+      }
+      showPlayerModal.value = false
+    } catch (e) {
+      formError.value = e.response?.data?.detail || 'Erro ao salvar.'
+    } finally {
+      saving.value = false
     }
-    showPlayerModal.value = false
-  } catch (e) {
-    formError.value = e.response?.data?.detail || 'Erro ao salvar.'
-  } finally {
-    saving.value = false
-  }
+  })
 }
 
-async function doRemove() {
+function doRemove() {
   const p = roundPlayers.value.find(x => x.player_id === selectedId.value)
   if (!p || !confirm(`Remover "${p.player_name}"?`)) return
-  try {
-    await removePlayer(selectedId.value)
-    selectedId.value = null
-    toast('Jogador removido.')
-  } catch (e) {
-    toast('Erro ao remover jogador.')
-  }
+  requireAuth(async () => {
+    try {
+      await removePlayer(selectedId.value)
+      selectedId.value = null
+      toast('Jogador removido.')
+    } catch (e) {
+      toast('Erro ao remover jogador.')
+    }
+  })
 }
 
-async function doFinalize() {
-  finalizing.value = true
-  try {
-    finalizeResult.value = await finalize()
-    toast('Rodada finalizada e salva no ranking! ✓')
-  } catch (e) {
-    toast(e.response?.data?.detail || 'Erro ao finalizar.')
-    showFinalize.value = false
-  } finally {
-    finalizing.value = false
-  }
+function doFinalize() {
+  requireAuth(async () => {
+    finalizing.value = true
+    try {
+      finalizeResult.value = await finalize()
+      toast('Rodada finalizada e salva no ranking! ✓')
+    } catch (e) {
+      toast(e.response?.data?.detail || 'Erro ao finalizar.')
+      showFinalize.value = false
+    } finally {
+      finalizing.value = false
+    }
+  })
 }
 
 onMounted(async () => {
