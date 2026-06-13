@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pathlib import Path
+from sqlalchemy import text
 from .database import engine, Base, SessionLocal
 from .routers import auth, config, players, rounds, ranking, financial, import_round
 from .seed import seed_db
@@ -47,6 +48,16 @@ app.include_router(import_round.router, prefix=API)
 
 @app.on_event("startup")
 def startup():
+    # Migrate existing SQLite DBs: add new player columns if missing
+    if engine.url.get_dialect().name == "sqlite":
+        with engine.connect() as conn:
+            cols = {row[1] for row in conn.execute(text("PRAGMA table_info(players)"))}
+            if "telefone" not in cols:
+                conn.execute(text("ALTER TABLE players ADD COLUMN telefone VARCHAR"))
+            if "pix" not in cols:
+                conn.execute(text("ALTER TABLE players ADD COLUMN pix VARCHAR"))
+            conn.commit()
+
     db = SessionLocal()
     try:
         seed_db(db)

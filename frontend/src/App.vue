@@ -10,15 +10,17 @@
   <nav>
     <button :class="{ active: tab === 'rodada' }"     @click="setTab('rodada')">Rodada Atual</button>
     <button :class="{ active: tab === 'ranking' }"    @click="setTab('ranking')">Ranking Semestral</button>
+    <button :class="{ active: tab === 'jogadores' }"  @click="setTab('jogadores')">Jogadores</button>
     <button :class="{ active: tab === 'financeiro' }" @click="setTab('financeiro', true)">Financeiro</button>
     <button :class="{ active: tab === 'config' }"     @click="setTab('config', true)">Configurações</button>
   </nav>
 
   <main>
-    <RodadaView    v-if="tab === 'rodada'" />
-    <RankingView   v-else-if="tab === 'ranking'" />
+    <RodadaView     v-if="tab === 'rodada'" />
+    <RankingView    v-else-if="tab === 'ranking'" />
+    <JogadoresView  v-else-if="tab === 'jogadores'" />
     <FinanceiroView v-else-if="tab === 'financeiro'" />
-    <ConfigView    v-else-if="tab === 'config'" />
+    <ConfigView     v-else-if="tab === 'config'" />
   </main>
 
   <footer>♠ Poker Night Manager — API {{ apiBase }}</footer>
@@ -60,6 +62,7 @@ import { ref, computed } from 'vue'
 import BaseModal      from './components/BaseModal.vue'
 import RodadaView     from './views/RodadaView.vue'
 import RankingView    from './views/RankingView.vue'
+import JogadoresView  from './views/JogadoresView.vue'
 import FinanceiroView from './views/FinanceiroView.vue'
 import ConfigView     from './views/ConfigView.vue'
 import { useAuth }    from './composables/useAuth'

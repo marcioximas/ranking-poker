@@ -27,14 +27,14 @@ def get_player(player_id: int, db: Session = Depends(get_db)):
 def create_player(data: PlayerCreate, db: Session = Depends(get_db)):
     if db.query(Player).filter(Player.name == data.name).first():
         raise HTTPException(409, f"Jogador '{data.name}' já existe.")
-    player = Player(name=data.name)
+    player = Player(name=data.name, telefone=data.telefone, pix=data.pix)
     db.add(player)
     db.commit()
     db.refresh(player)
     return player
 
 
-@router.put("/{player_id}", response_model=PlayerRead, summary="Atualizar nome do jogador",
+@router.put("/{player_id}", response_model=PlayerRead, summary="Atualizar dados do jogador",
             dependencies=[Depends(require_admin)])
 def update_player(player_id: int, data: PlayerUpdate, db: Session = Depends(get_db)):
     player = db.query(Player).filter(Player.id == player_id).first()
@@ -43,6 +43,8 @@ def update_player(player_id: int, data: PlayerUpdate, db: Session = Depends(get_
     if db.query(Player).filter(Player.name == data.name, Player.id != player_id).first():
         raise HTTPException(409, f"Já existe outro jogador com o nome '{data.name}'.")
     player.name = data.name
+    player.telefone = data.telefone
+    player.pix = data.pix
     db.commit()
     db.refresh(player)
     return player

@@ -27,15 +27,21 @@ class ConfigRead(ConfigUpdate):
 
 class PlayerCreate(BaseModel):
     name: str = Field(..., min_length=1)
+    telefone: Optional[str] = None
+    pix: Optional[str] = None
 
 
 class PlayerUpdate(BaseModel):
     name: str = Field(..., min_length=1)
+    telefone: Optional[str] = None
+    pix: Optional[str] = None
 
 
 class PlayerRead(BaseModel):
     id: int
     name: str
+    telefone: Optional[str] = None
+    pix: Optional[str] = None
 
     class Config:
         from_attributes = True

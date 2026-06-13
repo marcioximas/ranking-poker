@@ -19,6 +19,7 @@ export const configApi = {
 
 export const playersApi = {
   list:   ()           => http.get('/players'),
+  get:    (id)         => http.get(`/players/${id}`),
   create: (data)       => http.post('/players', data),
   update: (id, data)   => http.put(`/players/${id}`, data),
   remove: (id)         => http.delete(`/players/${id}`),

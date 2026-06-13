@@ -22,6 +22,8 @@ class Player(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
+    telefone = Column(String, nullable=True)
+    pix = Column(String, nullable=True)
 
     round_entries = relationship("RoundPlayer", back_populates="player", cascade="all, delete-orphan")
     semestral_scores = relationship("SemestralScore", back_populates="player", cascade="all, delete-orphan")
