@@ -60,6 +60,10 @@ def startup():
             rp_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(round_players)"))}
             if "colocacao" not in rp_cols:
                 conn.execute(text("ALTER TABLE round_players ADD COLUMN colocacao INTEGER DEFAULT 0"))
+
+            cfg_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(config)"))}
+            if "pix_receiver_player_id" not in cfg_cols:
+                conn.execute(text("ALTER TABLE config ADD COLUMN pix_receiver_player_id INTEGER"))
             conn.commit()
 
     db = SessionLocal()

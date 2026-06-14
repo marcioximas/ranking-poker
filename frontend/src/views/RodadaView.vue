@@ -298,7 +298,7 @@
       </div>
       <!-- PIX section -->
       <div v-if="pixCodes.length" style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
-        <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Cobranças via PIX (Marcio)</p>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Cobranças via PIX ({{ pixCodes[0]?.receiverName }})</p>
         <div v-for="item in pixCodes" :key="item.player_name" class="fin-row" style="align-items:center;gap:8px">
           <span class="fin-lbl" style="flex:1">{{ item.player_name }}</span>
           <span style="color:var(--gold);font-size:13px;min-width:70px;text-align:right">{{ brl(item.valor) }}</span>
@@ -617,8 +617,10 @@ function gerarPixCopiaCola(chave, nome, valor) {
 
 function doFinalize() {
   requireAuth(async () => {
-    // Snapshot buy-ins and Marcio's PIX before round data is cleared
-    const marcio = allPlayers.value.find(p => p.name.toLowerCase() === 'marcio')
+    // Snapshot buy-ins and PIX receiver's key before round data is cleared
+    const marcio = config.value?.pix_receiver_player_id
+      ? allPlayers.value.find(p => p.id === config.value.pix_receiver_player_id)
+      : null
     const snapshot = roundPlayers.value.map(p => ({
       player_name: p.player_name,
       valor: p.buyin * (config.value?.buyin_value || 50) + p.addon * (config.value?.addon_value || 50),
@@ -632,8 +634,9 @@ function doFinalize() {
           .filter(p => p.valor > 0)
           .map(p => ({
             player_name: p.player_name,
+            receiverName: marcio.name,
             valor: p.valor,
-            code: gerarPixCopiaCola(marcio.pix, 'Marcio', p.valor),
+            code: gerarPixCopiaCola(marcio.pix, marcio.name, p.valor),
             copied: false,
           }))
       } else {

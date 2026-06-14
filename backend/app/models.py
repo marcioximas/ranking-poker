@@ -15,6 +15,7 @@ class Config(Base):
     itm_bonus_points = Column(Integer, default=5)
     prize_pct = Column(Float, default=70.0)
     ranking_pct = Column(Float, default=30.0)
+    pix_receiver_player_id = Column(Integer, nullable=True)
 
 
 class Player(Base):

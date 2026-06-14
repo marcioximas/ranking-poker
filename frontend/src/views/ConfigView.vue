@@ -37,6 +37,18 @@
         <label>% Ranking da noite</label>
         <input type="number" v-model.number="form.ranking_pct" min="0" max="100" />
       </div>
+      <div class="field" style="grid-column: 1 / -1">
+        <label>Jogador que recebe o PIX</label>
+        <select v-model.number="form.pix_receiver_player_id">
+          <option :value="null">— Nenhum —</option>
+          <option v-for="p in players" :key="p.id" :value="p.id">
+            {{ p.name }}{{ p.pix ? ' — ' + p.pix : ' (sem PIX cadastrado)' }}
+          </option>
+        </select>
+        <p v-if="selectedReceiver && !selectedReceiver.pix" style="font-size:11px;color:var(--red);margin-top:4px">
+          Este jogador não tem chave PIX cadastrada. Edite o perfil dele na aba Jogadores.
+        </p>
+      </div>
     </div>
     <br>
     <button class="btn btn-gold" @click="doSave" :disabled="saving">
@@ -46,15 +58,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useConfig } from '../stores/config'
 import { useToast } from '../composables/useToast'
+import { playersApi } from '../api'
 
 const { config, fetch, save } = useConfig()
 const { show: toast } = useToast()
 
-const form   = ref(null)
-const saving = ref(false)
+const form    = ref(null)
+const saving  = ref(false)
+const players = ref([])
+
+const selectedReceiver = computed(() =>
+  form.value?.pix_receiver_player_id
+    ? players.value.find(p => p.id === form.value.pix_receiver_player_id) ?? null
+    : null
+)
 
 async function doSave() {
   saving.value = true
@@ -69,7 +89,15 @@ async function doSave() {
 }
 
 onMounted(async () => {
-  await fetch()
+  const [, { data }] = await Promise.all([fetch(), playersApi.list()])
+  players.value = data
+
   form.value = { ...config.value }
+
+  // Pre-select "Marcio Ximas" if no receiver is configured yet
+  if (!form.value.pix_receiver_player_id) {
+    const marcio = data.find(p => p.name.toLowerCase() === 'marcio ximas')
+    if (marcio) form.value.pix_receiver_player_id = marcio.id
+  }
 })
 </script>

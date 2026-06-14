@@ -14,6 +14,7 @@ class ConfigUpdate(BaseModel):
     itm_bonus_points: int = Field(5, ge=0)
     prize_pct: float = Field(70.0, ge=0, le=100)
     ranking_pct: float = Field(30.0, ge=0, le=100)
+    pix_receiver_player_id: Optional[int] = None
 
 
 class ConfigRead(ConfigUpdate):
