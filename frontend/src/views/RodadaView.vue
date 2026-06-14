@@ -192,10 +192,6 @@
           <label>Label da rodada (opcional)</label>
           <input type="text" v-model="importForm.label" placeholder="ex: Rodada 20 - 15/06" />
         </div>
-        <div class="field full">
-          <label for="import-password">Senha de administrador</label>
-          <input id="import-password" type="password" v-model="importForm.password" placeholder="••••••••" autofocus @keyup.enter="doAnalyze" />
-        </div>
       </div>
       <div v-if="importError" style="color:var(--red);font-size:12px;margin-top:8px">{{ importError }}</div>
       <div class="modal-actions">
@@ -355,7 +351,7 @@ const startForm = ref({ label: '', date: '', password: '' })
 // ── PDF Import ───────────────────────────────────────────────────────────────
 const showImportModal = ref(false)
 const importStep      = ref('form')   // 'form' | 'preview'
-const importForm      = ref({ label: '', password: '' })
+const importForm      = ref({ label: '' })
 const importFile      = ref(null)
 const importPreview   = ref({ matched: [], unmatched: [] })
 const importError     = ref('')
@@ -363,7 +359,7 @@ const importing       = ref(false)
 
 function openImport() {
   importStep.value    = 'form'
-  importForm.value    = { label: '', password: '' }
+  importForm.value    = { label: '' }
   importFile.value    = null
   importPreview.value = { matched: [], unmatched: [] }
   importError.value   = ''
@@ -386,30 +382,29 @@ function onFileChange(event) {
   importFile.value = file
 }
 
-async function doAnalyze() {
+function doAnalyze() {
   importError.value = ''
-  if (!importFile.value)          { importError.value = 'Selecione um arquivo PDF.'; return }
-  if (!importForm.value.password) { importError.value = 'Informe a senha de administrador.'; return }
+  if (!importFile.value) { importError.value = 'Selecione um arquivo PDF.'; return }
+  requireAuth(async () => {
+    importing.value = true
+    try {
+      const fd = new FormData()
+      fd.append('file', importFile.value)
+      fd.append('label', importForm.value.label || '')
+      fd.append('dry_run', 'true')
 
-  importing.value = true
-  try {
-    const { data: auth } = await authApi.verify(importForm.value.password)
-    if (!auth.valid) { importError.value = 'Senha incorreta.'; return }
-    setAdminPassword(importForm.value.password)
-
-    const fd = new FormData()
-    fd.append('file', importFile.value)
-    fd.append('label', importForm.value.label || '')
-    fd.append('dry_run', 'true')
-
-    const { data } = await roundsApi.importPdf(fd)
-    importPreview.value = data
-    importStep.value = 'preview'
-  } catch (e) {
-    importError.value = e.response?.data?.detail || 'Erro ao analisar o PDF.'
-  } finally {
-    importing.value = false
-  }
+      const { data } = await roundsApi.importPdf(fd)
+      importPreview.value = data
+      importStep.value = 'preview'
+    } catch (e) {
+      const detail = e.response?.data?.detail
+      importError.value = detail
+        ? (Array.isArray(detail) ? detail.map(d => d.msg).join('; ') : detail)
+        : `Erro ao analisar o PDF (HTTP ${e.response?.status ?? 'sem resposta'}).`
+    } finally {
+      importing.value = false
+    }
+  })
 }
 
 async function doCreateRound() {
