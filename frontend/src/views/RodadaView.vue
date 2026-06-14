@@ -305,7 +305,7 @@
           <button
             class="btn btn-ghost"
             style="padding:4px 10px;font-size:11px;min-width:70px"
-            @click="navigator.clipboard.writeText(item.code).then(() => { item.copied = true; setTimeout(() => item.copied = false, 2000) })"
+            @click="copyPixCode(item)"
           >{{ item.copied ? '✓ Copiado' : 'Copiar PIX' }}</button>
         </div>
       </div>
@@ -596,6 +596,29 @@ function doRemove() {
       toast('Erro ao remover jogador.')
     }
   })
+}
+
+async function copyPixCode(item) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(item.code)
+    } else {
+      // Fallback for non-HTTPS or blocked clipboard
+      const ta = document.createElement('textarea')
+      ta.value = item.code
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.focus()
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    item.copied = true
+    setTimeout(() => { item.copied = false }, 2000)
+  } catch {
+    toast('Não foi possível copiar. Tente manualmente.')
+  }
 }
 
 function gerarPixCopiaCola(chave, nome, valor) {
