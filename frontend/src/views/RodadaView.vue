@@ -28,7 +28,7 @@
         <button class="btn btn-primary" @click="openAdd">+ Adicionar Jogador</button>
         <button class="btn btn-ghost"   @click="openEdit">✎ Editar</button>
         <button class="btn btn-danger btn-sm" @click="doRemove">✕ Remover</button>
-        <button class="btn btn-gold" style="margin-left:auto" @click="showFinalize = true">✓ Finalizar Rodada</button>
+        <button class="btn btn-gold" style="margin-left:auto" @click="openFinalize">✓ Finalizar Rodada</button>
       </div>
 
       <div class="table-wrap">
@@ -550,7 +550,6 @@ async function doStartRound() {
 
 async function doSavePlayer() {
   if (!form.value.name.trim()) { formError.value = 'Nome é obrigatório.'; return }
-  if (!form.value.colocacao) { formError.value = 'Colocação é obrigatória.'; return }
   formError.value = ''
   requireAuth(async () => {
     saving.value = true
@@ -615,6 +614,15 @@ function gerarPixCopiaCola(chave, nome, valor) {
     for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF
   }
   return p + crc.toString(16).toUpperCase().padStart(4, '0')
+}
+
+function openFinalize() {
+  const sem = roundPlayers.value.filter(p => !p.colocacao)
+  if (sem.length) {
+    toast(`Defina a colocação de: ${sem.map(p => p.player_name).join(', ')}`)
+    return
+  }
+  showFinalize.value = true
 }
 
 function doFinalize() {
