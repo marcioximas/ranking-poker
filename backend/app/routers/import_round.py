@@ -12,15 +12,26 @@ router = APIRouter(prefix="/rounds", tags=["Importar Rodada"])
 
 # Maps normalized Portuguese column names → RoundPlayer field
 _COLUMN_MAP = {
+    # name
     "jogador": "name", "nome": "name", "player": "name",
+    # pontos
     "pontos": "pontos", "pts": "pontos",
-    "presenca": "presenca", "presença": "presenca",
-    "bonus": "bonus", "bônus": "bonus", "itm": "bonus",
+    # presenca
+    "presenca": "presenca",
+    # bonus
+    "bonus": "bonus", "itm": "bonus", "bonus itm": "bonus",
+    # pontualidade
     "pontualidade": "pontualidade", "pont": "pontualidade",
-    "indicacao": "indicacao", "indicação": "indicacao", "ind": "indicacao",
+    # indicacao
+    "indicacao": "indicacao", "ind": "indicacao",
+    # buyin
     "compras": "buyin", "buyin": "buyin", "buyins": "buyin",
     "buy-in": "buyin", "buy-ins": "buyin", "rebuys": "buyin",
+    "buy in / rebuy": "buyin", "buy in": "buyin", "rebuy": "buyin",
+    # addon
     "addon": "addon", "addons": "addon", "add-on": "addon",
+    # colocacao
+    "colocacao": "colocacao", "col": "colocacao",
 }
 
 
@@ -108,6 +119,7 @@ def _match_players(raw_rows: list[dict], db_players: list[Player]):
                 "player_name":  player.name,
                 "buyin":        _to_int(row.get("buyin")) or 1,
                 "addon":        _to_int(row.get("addon")),
+                "colocacao":    _to_int(row.get("colocacao")),
                 "pontos":       _to_int(row.get("pontos")),
                 "presenca":     _to_int(row.get("presenca")),
                 "bonus":        _to_int(row.get("bonus")),
@@ -195,6 +207,7 @@ async def import_round_from_pdf(
             player_id=m["player_id"],
             buyin=m["buyin"],
             addon=m["addon"],
+            colocacao=m["colocacao"],
             pontos=m["pontos"],
             presenca=m["presenca"],
             bonus=m["bonus"],
