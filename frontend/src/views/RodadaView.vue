@@ -26,8 +26,8 @@
     <template v-else>
       <div class="toolbar">
         <button class="btn btn-primary" @click="openAdd">+ Adicionar Jogador</button>
-        <button class="btn btn-ghost"   @click="openEdit" :disabled="!selectedId">✎ Editar</button>
-        <button class="btn btn-danger btn-sm" @click="doRemove" :disabled="!selectedId">✕ Remover</button>
+        <button class="btn btn-ghost"   @click="openEdit">✎ Editar</button>
+        <button class="btn btn-danger btn-sm" @click="doRemove">✕ Remover</button>
         <button class="btn btn-gold" style="margin-left:auto" @click="showFinalize = true">✓ Finalizar Rodada</button>
       </div>
 
@@ -509,6 +509,7 @@ function openAdd() {
 }
 
 function openEdit() {
+  if (!selectedId.value) { toast('Selecione um jogador na tabela para editar.'); return }
   const p = roundPlayers.value.find(x => x.player_id === selectedId.value)
   if (!p) return
   editingPlayer.value = p
@@ -584,6 +585,7 @@ async function doSavePlayer() {
 }
 
 function doRemove() {
+  if (!selectedId.value) { toast('Selecione um jogador na tabela para remover.'); return }
   const p = roundPlayers.value.find(x => x.player_id === selectedId.value)
   if (!p || !confirm(`Remover "${p.player_name}"?`)) return
   requireAuth(async () => {
