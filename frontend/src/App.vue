@@ -11,8 +11,8 @@
     <button :class="{ active: tab === 'rodada' }"     @click="setTab('rodada')">Rodada Atual</button>
     <button :class="{ active: tab === 'ranking' }"    @click="setTab('ranking')">Ranking Semestral</button>
     <button :class="{ active: tab === 'jogadores' }"  @click="setTab('jogadores')">Jogadores</button>
-    <button :class="{ active: tab === 'financeiro' }" @click="setTab('financeiro', true)">Financeiro</button>
-    <button :class="{ active: tab === 'config' }"     @click="setTab('config', true)">Configurações</button>
+    <button :class="{ active: tab === 'financeiro' }" @click="setTab('financeiro')">Financeiro</button>
+    <button :class="{ active: tab === 'config' }"     @click="setTab('config')">Configurações</button>
   </nav>
 
   <main>

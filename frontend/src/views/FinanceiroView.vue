@@ -98,9 +98,11 @@ import StatCard from '../components/StatCard.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { useFinancial } from '../stores/financial'
 import { useToast } from '../composables/useToast'
+import { useAuth } from '../composables/useAuth'
 
 const { summary, expenses, fetch, updateFinancial, createExpense, updateExpense, removeExpense } = useFinancial()
 const { show: toast } = useToast()
+const { requireAuth } = useAuth()
 
 const cxAnt = ref(0)
 const rkAnt = ref(0)
@@ -114,37 +116,45 @@ const brl = (v) => {
 }
 const pct = (s) => s ? `${Math.round(s.premiacao_total / (s.caixa_noite || 1) * 100)}%` : '70%'
 
-async function saveFinancial() {
-  try {
-    await updateFinancial({ caixa_anterior: cxAnt.value, ranking_anterior: rkAnt.value })
-  } catch {
-    toast('Erro ao salvar.')
-  }
+function saveFinancial() {
+  requireAuth(async () => {
+    try {
+      await updateFinancial({ caixa_anterior: cxAnt.value, ranking_anterior: rkAnt.value })
+    } catch {
+      toast('Erro ao salvar.')
+    }
+  })
 }
 
-async function onExpenseChange(expense, event) {
+function onExpenseChange(expense, event) {
   const val = parseFloat(event.target.value) || 0
-  try {
-    await updateExpense(expense.id, { value: val })
-  } catch {
-    toast('Erro ao atualizar despesa.')
-  }
+  requireAuth(async () => {
+    try {
+      await updateExpense(expense.id, { value: val })
+    } catch {
+      toast('Erro ao atualizar despesa.')
+    }
+  })
 }
 
-async function doRemoveExpense(expense) {
+function doRemoveExpense(expense) {
   if (!confirm(`Remover despesa "${expense.name}"?`)) return
-  try {
-    await removeExpense(expense.id)
-    toast(`Despesa "${expense.name}" removida.`)
-  } catch {
-    toast('Erro ao remover despesa.')
-  }
+  requireAuth(async () => {
+    try {
+      await removeExpense(expense.id)
+      toast(`Despesa "${expense.name}" removida.`)
+    } catch {
+      toast('Erro ao remover despesa.')
+    }
+  })
 }
 
 function openAddExpense() {
-  expForm.value = { name: '', value: 0 }
-  expError.value = ''
-  showExpenseModal.value = true
+  requireAuth(() => {
+    expForm.value = { name: '', value: 0 }
+    expError.value = ''
+    showExpenseModal.value = true
+  })
 }
 
 async function doAddExpense() {

@@ -61,10 +61,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useConfig } from '../stores/config'
 import { useToast } from '../composables/useToast'
+import { useAuth } from '../composables/useAuth'
 import { playersApi } from '../api'
 
 const { config, fetch, save } = useConfig()
 const { show: toast } = useToast()
+const { requireAuth } = useAuth()
 
 const form    = ref(null)
 const saving  = ref(false)
@@ -76,16 +78,18 @@ const selectedReceiver = computed(() =>
     : null
 )
 
-async function doSave() {
-  saving.value = true
-  try {
-    await save(form.value)
-    toast('Configurações salvas! ✓')
-  } catch {
-    toast('Erro ao salvar configurações.')
-  } finally {
-    saving.value = false
-  }
+function doSave() {
+  requireAuth(async () => {
+    saving.value = true
+    try {
+      await save(form.value)
+      toast('Configurações salvas! ✓')
+    } catch {
+      toast('Erro ao salvar configurações.')
+    } finally {
+      saving.value = false
+    }
+  })
 }
 
 onMounted(async () => {
