@@ -198,15 +198,28 @@ def _parse_csv(content: bytes) -> list[dict]:
     return rows
 
 
+def _find_player(name: str, db_players: list[Player]):
+    norm = _norm(name)
+    # Exact match first
+    for p in db_players:
+        if _norm(p.name) == norm:
+            return p
+    # Prefix match: "Danilo" → "Danilo Vieira" (avoids false positives like "Fael"→"Rafael")
+    for p in db_players:
+        pn = _norm(p.name)
+        if norm and len(norm) >= 4 and (pn.startswith(norm) or norm.startswith(pn)):
+            return p
+    return None
+
+
 def _match_players(raw_rows: list[dict], db_players: list[Player]):
-    index = {_norm(p.name): p for p in db_players}
     matched, unmatched = [], []
 
     for row in raw_rows:
         name = row.get("name", "").strip()
         if not name:
             continue
-        player = index.get(_norm(name))
+        player = _find_player(name, db_players)
         if not player:
             unmatched.append(name)
         else:
