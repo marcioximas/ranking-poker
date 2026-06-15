@@ -17,7 +17,7 @@
         <br>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
           <button class="btn btn-gold" @click="showStartModal = true">+ Iniciar Rodada</button>
-          <button class="btn btn-primary" @click="openImport">📄 Importar via PDF</button>
+          <button class="btn btn-primary" @click="openImport">📋 Importar via CSV</button>
         </div>
       </div>
     </template>
@@ -179,14 +179,15 @@
   <BaseModal v-if="showImportModal" @close="closeImport">
     <!-- Step 1: form -->
     <template v-if="importStep === 'form'">
-      <h2>Importar Rodada via PDF</h2>
+      <h2>Importar Rodada via CSV</h2>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">
-        Selecione um PDF com uma tabela contendo a coluna <strong>Jogador</strong> e os pontos da rodada.
+        Exporte a planilha como <strong>CSV</strong> e selecione o arquivo abaixo.<br>
+        Colunas reconhecidas: <em>Nome / Jogador, Buy in / Rebuy, Addon, Pontos, Presença, Bônus ITM, Indicação, Pontualidade, Colocação.</em>
       </p>
       <div class="form-grid">
         <div class="field full">
-          <label>Arquivo PDF</label>
-          <input type="file" accept=".pdf" @change="onFileChange" style="color:var(--text)" />
+          <label>Arquivo CSV</label>
+          <input type="file" accept=".csv" @change="onFileChange" style="color:var(--text)" />
         </div>
         <div class="field full">
           <label>Label da rodada (opcional)</label>
@@ -196,7 +197,7 @@
       <div v-if="importError" style="color:var(--red);font-size:12px;margin-top:8px">{{ importError }}</div>
       <div class="modal-actions">
         <button class="btn btn-primary" @click="doAnalyze" :disabled="importing">
-          {{ importing ? 'Analisando...' : '🔍 Analisar PDF' }}
+          {{ importing ? 'Analisando...' : '🔍 Analisar CSV' }}
         </button>
         <button class="btn btn-ghost" @click="closeImport">Cancelar</button>
       </div>
@@ -348,7 +349,7 @@ const startError      = ref('')
 
 const startForm = ref({ label: '', date: '', password: '' })
 
-// ── PDF Import ───────────────────────────────────────────────────────────────
+// ── CSV Import ───────────────────────────────────────────────────────────────
 const showImportModal = ref(false)
 const importStep      = ref('form')   // 'form' | 'preview'
 const importForm      = ref({ label: '' })
@@ -372,19 +373,13 @@ function closeImport() {
 
 function onFileChange(event) {
   const file = event.target.files[0] || null
-  if (file && file.size > 5 * 1024 * 1024) {
-    importError.value = 'O arquivo PDF não pode ser maior que 5 MB.'
-    event.target.value = ''
-    importFile.value = null
-    return
-  }
   importError.value = ''
   importFile.value = file
 }
 
 function doAnalyze() {
   importError.value = ''
-  if (!importFile.value) { importError.value = 'Selecione um arquivo PDF.'; return }
+  if (!importFile.value) { importError.value = 'Selecione um arquivo CSV.'; return }
   requireAuth(async () => {
     importing.value = true
     try {
@@ -393,14 +388,14 @@ function doAnalyze() {
       fd.append('label', importForm.value.label || '')
       fd.append('dry_run', 'true')
 
-      const { data } = await roundsApi.importPdf(fd)
+      const { data } = await roundsApi.importCsv(fd)
       importPreview.value = data
       importStep.value = 'preview'
     } catch (e) {
       const detail = e.response?.data?.detail
       importError.value = detail
         ? (Array.isArray(detail) ? detail.map(d => d.msg).join('; ') : detail)
-        : `Erro ao analisar o PDF (HTTP ${e.response?.status ?? 'sem resposta'}).`
+        : `Erro ao analisar o arquivo (HTTP ${e.response?.status ?? 'sem resposta'}).`
     } finally {
       importing.value = false
     }
@@ -416,7 +411,7 @@ async function doCreateRound() {
     fd.append('label', importForm.value.label || '')
     fd.append('dry_run', 'false')
 
-    const { data } = await roundsApi.importPdf(fd)
+    const { data } = await roundsApi.importCsv(fd)
     await fetchCurrent()
     closeImport()
     toast(`Rodada "${data.round_label}" criada com ${data.players_added} jogadores! ✓`)

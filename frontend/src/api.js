@@ -41,6 +41,9 @@ export const roundsApi = {
   importPdf:    (formData)       => http.post('/rounds/import-pdf', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
+  importCsv:    (formData)       => http.post('/rounds/import-csv', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
 }
 
 export const rankingApi = {

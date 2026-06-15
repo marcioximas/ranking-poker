@@ -178,6 +178,26 @@ def _parse_pdf(content: bytes) -> list[dict]:
         raise HTTPException(422, f"Erro ao processar o PDF: {exc}")
 
 
+def _parse_csv(content: bytes) -> list[dict]:
+    import csv
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = content.decode("latin-1")
+
+    reader = csv.DictReader(text.splitlines())
+    rows = []
+    for raw in reader:
+        entry: dict[str, str] = {}
+        for col, val in raw.items():
+            field = _COLUMN_MAP.get(_norm(col or ""))
+            if field and field not in entry:
+                entry[field] = (val or "").strip()
+        if entry.get("name"):
+            rows.append(entry)
+    return rows
+
+
 def _match_players(raw_rows: list[dict], db_players: list[Player]):
     index = {_norm(p.name): p for p in db_players}
     matched, unmatched = [], []
@@ -205,66 +225,14 @@ def _match_players(raw_rows: list[dict], db_players: list[Player]):
     return matched, unmatched
 
 
-@router.post(
-    "/import-pdf",
-    summary="Importar rodada via PDF",
-    dependencies=[Depends(require_admin)],
-)
-async def import_round_from_pdf(
-    file:    UploadFile    = File(..., description="PDF com a planilha da rodada"),
-    label:   Optional[str] = Form(None),
-    dry_run: bool          = Form(False),
-    db:      Session       = Depends(get_db),
-):
-    """
-    Lê uma planilha PDF e cria uma rodada com os jogadores reconhecidos.
-
-    **Formato esperado** — tabela com pelo menos a coluna *Jogador*:
-
-    | Jogador | Pontos | Presença | Bônus | Pontualidade | Indicação | Compras | Addon |
-    |---------|--------|----------|-------|--------------|-----------|---------|-------|
-    | Alice   | 10     | 5        | 10    | 0            | 0         | 1       | 0     |
-
-    - `dry_run=true` → apenas analisa e retorna preview, sem criar nada.
-    - `dry_run=false` → analisa + cria rodada + adiciona jogadores reconhecidos.
-    """
-    if not (file.filename or "").lower().endswith(".pdf"):
-        raise HTTPException(400, "O arquivo deve ser um PDF (.pdf).")
-
-    content = await file.read()
-    if not content:
-        raise HTTPException(400, "O arquivo PDF está vazio.")
-
-    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
-    if len(content) > MAX_SIZE:
-        raise HTTPException(413, "O arquivo PDF não pode ser maior que 5 MB.")
-
-    loop = asyncio.get_event_loop()
-    try:
-        raw_rows = await asyncio.wait_for(
-            loop.run_in_executor(None, _parse_pdf, content),
-            timeout=20.0,
-        )
-    except asyncio.TimeoutError:
-        raise HTTPException(408, "O processamento do PDF excedeu o tempo limite. Tente um arquivo menor ou mais simples.")
-
-    if not raw_rows:
-        raise HTTPException(
-            422,
-            "Nenhum dado encontrado no PDF. "
-            "Verifique se o arquivo contém uma tabela com coluna 'Jogador' ou 'Nome'.",
-        )
-
-    db_players = db.query(Player).all()
-    matched, unmatched = _match_players(raw_rows, db_players)
-
+def _do_import(matched: list, unmatched: list, dry_run: bool, label: Optional[str], db: Session):
     if dry_run:
         return {"dry_run": True, "matched": matched, "unmatched": unmatched}
 
     if not matched:
         raise HTTPException(
             422,
-            "Nenhum jogador do PDF foi encontrado no cadastro. "
+            "Nenhum jogador foi encontrado no cadastro. "
             "Verifique se os nomes coincidem com os jogadores cadastrados.",
         )
 
@@ -275,6 +243,7 @@ async def import_round_from_pdf(
 
     if db.query(Round).filter(Round.label == round_label).first():
         raise HTTPException(409, f"Já existe uma rodada com o label '{round_label}'.")
+
     round_ = Round(
         label=round_label,
         is_current=True,
@@ -308,3 +277,88 @@ async def import_round_from_pdf(
         "matched":       matched,
         "unmatched":     unmatched,
     }
+
+
+@router.post(
+    "/import-csv",
+    summary="Importar rodada via CSV",
+    dependencies=[Depends(require_admin)],
+)
+async def import_round_from_csv(
+    file:    UploadFile    = File(..., description="CSV exportado da planilha da rodada"),
+    label:   Optional[str] = Form(None),
+    dry_run: bool          = Form(False),
+    db:      Session       = Depends(get_db),
+):
+    """
+    Importa uma rodada a partir de um arquivo CSV.
+
+    **Colunas reconhecidas** (case-insensitive, aceita acentuação):
+    `Nome` / `Jogador`, `Buy in / Rebuy` / `Compras`, `Addon`, `Pontos`,
+    `Presença`, `Bônus ITM`, `Indicação`, `Pontualidade`, `Colocação`.
+    """
+    if not (file.filename or "").lower().endswith(".csv"):
+        raise HTTPException(400, "O arquivo deve ser um CSV (.csv).")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(400, "O arquivo CSV está vazio.")
+
+    try:
+        raw_rows = _parse_csv(content)
+    except Exception as exc:
+        raise HTTPException(422, f"Erro ao processar o CSV: {exc}")
+
+    if not raw_rows:
+        raise HTTPException(
+            422,
+            "Nenhum dado encontrado no CSV. "
+            "Verifique se o arquivo contém uma coluna 'Nome' ou 'Jogador'.",
+        )
+
+    db_players = db.query(Player).all()
+    matched, unmatched = _match_players(raw_rows, db_players)
+    return _do_import(matched, unmatched, dry_run, label, db)
+
+
+@router.post(
+    "/import-pdf",
+    summary="Importar rodada via PDF",
+    dependencies=[Depends(require_admin)],
+)
+async def import_round_from_pdf(
+    file:    UploadFile    = File(..., description="PDF com a planilha da rodada"),
+    label:   Optional[str] = Form(None),
+    dry_run: bool          = Form(False),
+    db:      Session       = Depends(get_db),
+):
+    if not (file.filename or "").lower().endswith(".pdf"):
+        raise HTTPException(400, "O arquivo deve ser um PDF (.pdf).")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(400, "O arquivo PDF está vazio.")
+
+    MAX_SIZE = 5 * 1024 * 1024
+    if len(content) > MAX_SIZE:
+        raise HTTPException(413, "O arquivo PDF não pode ser maior que 5 MB.")
+
+    loop = asyncio.get_event_loop()
+    try:
+        raw_rows = await asyncio.wait_for(
+            loop.run_in_executor(None, _parse_pdf, content),
+            timeout=20.0,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(408, "O processamento do PDF excedeu o tempo limite.")
+
+    if not raw_rows:
+        raise HTTPException(
+            422,
+            "Nenhum dado encontrado no PDF. O arquivo pode ser baseado em imagem. "
+            "Tente exportar como CSV.",
+        )
+
+    db_players = db.query(Player).all()
+    matched, unmatched = _match_players(raw_rows, db_players)
+    return _do_import(matched, unmatched, dry_run, label, db)
