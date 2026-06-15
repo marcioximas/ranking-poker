@@ -45,17 +45,29 @@ def get_financial(db: Session = Depends(get_db)):
     total_buyins = sum(rp.buyin for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
     caixa_noite = total_buyins * config.buyin_value + total_addons * config.addon_value
-    caixa_atual = fin.caixa_anterior + caixa_noite
     premiacao_total = caixa_noite * (config.prize_pct / 100)
     ranking_noite = caixa_noite * (config.ranking_pct / 100)
-    ranking_total = fin.ranking_anterior + ranking_noite
 
+    # Auto-computed: caixa_anterior = total accumulated expenses
     total_despesas = sum(e.value for e in db.query(Expense).all())
+    caixa_anterior = total_despesas
+
+    # Auto-computed: ranking_anterior = sum of ranking contributions from all finalized rounds
+    finalized_rounds = db.query(Round).filter(Round.is_finalized == True).all()
+    ranking_anterior = sum(
+        (sum(rp.buyin for rp in r.round_players) * config.buyin_value +
+         sum(rp.addon for rp in r.round_players) * config.addon_value)
+        * (config.ranking_pct / 100)
+        for r in finalized_rounds
+    )
+
+    caixa_atual = caixa_anterior + caixa_noite
+    ranking_total = ranking_anterior + ranking_noite
     caixa_com_despesas = caixa_atual - total_despesas
 
     return FinancialSummary(
-        caixa_anterior=fin.caixa_anterior,
-        ranking_anterior=fin.ranking_anterior,
+        caixa_anterior=caixa_anterior,
+        ranking_anterior=ranking_anterior,
         total_buyins=total_buyins,
         total_addons=total_addons,
         caixa_noite=caixa_noite,
