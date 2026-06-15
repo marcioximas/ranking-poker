@@ -37,6 +37,14 @@
         <label>% Ranking da noite</label>
         <input type="number" v-model.number="form.ranking_pct" min="0" max="100" />
       </div>
+      <div class="field">
+        <label>Caixa Anterior (R$)</label>
+        <input type="number" v-model.number="fin.caixa_anterior" step="0.01" min="0" />
+      </div>
+      <div class="field">
+        <label>Ranking Anterior (R$)</label>
+        <input type="number" v-model.number="fin.ranking_anterior" step="0.01" min="0" />
+      </div>
       <div class="field" style="grid-column: 1 / -1">
         <label>Jogador que recebe o PIX</label>
         <select v-model.number="form.pix_receiver_player_id">
@@ -60,15 +68,18 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useConfig } from '../stores/config'
+import { useFinancial } from '../stores/financial'
 import { useToast } from '../composables/useToast'
 import { useAuth } from '../composables/useAuth'
 import { playersApi } from '../api'
 
 const { config, fetch, save } = useConfig()
+const { summary: finSummary, fetch: fetchFin, updateFinancial } = useFinancial()
 const { show: toast } = useToast()
 const { requireAuth } = useAuth()
 
 const form    = ref(null)
+const fin     = ref({ caixa_anterior: 0, ranking_anterior: 0 })
 const saving  = ref(false)
 const players = ref([])
 
@@ -82,7 +93,10 @@ function doSave() {
   requireAuth(async () => {
     saving.value = true
     try {
-      await save(form.value)
+      await Promise.all([
+        save(form.value),
+        updateFinancial({ caixa_anterior: fin.value.caixa_anterior, ranking_anterior: fin.value.ranking_anterior }),
+      ])
       toast('Configurações salvas! ✓')
     } catch {
       toast('Erro ao salvar configurações.')
@@ -93,15 +107,17 @@ function doSave() {
 }
 
 onMounted(async () => {
-  const [, { data }] = await Promise.all([fetch(), playersApi.list()])
+  const [, { data }] = await Promise.all([fetch(), playersApi.list(), fetchFin()])
   players.value = data
 
   form.value = { ...config.value }
 
-  // Pre-select "Marcio Ximas" if no receiver is configured yet
   if (!form.value.pix_receiver_player_id) {
     const marcio = data.find(p => p.name.toLowerCase() === 'marcio ximas')
     if (marcio) form.value.pix_receiver_player_id = marcio.id
   }
+
+  fin.value.caixa_anterior   = finSummary.value?.caixa_anterior   ?? 0
+  fin.value.ranking_anterior = finSummary.value?.ranking_anterior ?? 0
 })
 </script>

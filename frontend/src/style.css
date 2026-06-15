@@ -154,8 +154,8 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .table-wrap {
   border: 1px solid var(--border);
   border-radius: 12px;
-  overflow: hidden;
   overflow-x: auto;
+  overflow-y: clip; /* clips corners without creating a scroll container, so position:sticky works */
 }
 
 table {

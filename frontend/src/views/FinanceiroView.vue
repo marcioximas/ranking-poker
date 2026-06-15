@@ -36,14 +36,15 @@
 
         <br>
         <p class="fin-section-title">HISTÓRICO</p>
-        <div class="fin-input-row">
-          <label>Caixa Anterior (R$)</label>
-          <input type="number" v-model.number="cxAnt" step="0.01" style="width:120px;text-align:right" @change="saveFinancial" />
+        <div class="fin-row">
+          <span class="fin-lbl">Caixa Anterior (R$)</span>
+          <span class="fin-val">{{ brl(cxAnt) }}</span>
         </div>
-        <div class="fin-input-row">
-          <label>Ranking Anterior (R$)</label>
-          <input type="number" v-model.number="rkAnt" step="0.01" style="width:120px;text-align:right" @change="saveFinancial" />
+        <div class="fin-row">
+          <span class="fin-lbl">Ranking Anterior (R$)</span>
+          <span class="fin-val">{{ brl(rkAnt) }}</span>
         </div>
+        <p style="font-size:11px;color:var(--text-faint);margin-top:6px">Altere em Configurações.</p>
       </div>
 
       <!-- Right: Summary -->
@@ -100,7 +101,7 @@ import { useFinancial } from '../stores/financial'
 import { useToast } from '../composables/useToast'
 import { useAuth } from '../composables/useAuth'
 
-const { summary, expenses, fetch, updateFinancial, createExpense, updateExpense, removeExpense } = useFinancial()
+const { summary, expenses, fetch, createExpense, updateExpense, removeExpense } = useFinancial()
 const { show: toast } = useToast()
 const { requireAuth } = useAuth()
 
@@ -115,16 +116,6 @@ const brl = (v) => {
   return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 const pct = (s) => s ? `${Math.round(s.premiacao_total / (s.caixa_noite || 1) * 100)}%` : '70%'
-
-function saveFinancial() {
-  requireAuth(async () => {
-    try {
-      await updateFinancial({ caixa_anterior: cxAnt.value, ranking_anterior: rkAnt.value })
-    } catch {
-      toast('Erro ao salvar.')
-    }
-  })
-}
 
 function onExpenseChange(expense, event) {
   const val = parseFloat(event.target.value) || 0

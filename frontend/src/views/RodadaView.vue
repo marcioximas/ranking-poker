@@ -324,7 +324,7 @@ import BaseModal from '../components/BaseModal.vue'
 import { useRounds } from '../stores/rounds'
 import { useConfig } from '../stores/config'
 import { useToast } from '../composables/useToast'
-import { authApi, setAdminPassword } from '../api'
+import { authApi, roundsApi, setAdminPassword } from '../api'
 import { useAuth } from '../composables/useAuth'
 
 const { currentRound, roundPlayers, allPlayers, fetchCurrent, fetchAllPlayers, startRound, addPlayer, updatePlayer, removePlayer, finalize } = useRounds()
@@ -393,9 +393,11 @@ function doAnalyze() {
       importStep.value = 'preview'
     } catch (e) {
       const detail = e.response?.data?.detail
-      importError.value = detail
-        ? (Array.isArray(detail) ? detail.map(d => d.msg).join('; ') : detail)
-        : `Erro ao analisar o arquivo (HTTP ${e.response?.status ?? 'sem resposta'}).`
+      if (detail) {
+        importError.value = Array.isArray(detail) ? detail.map(d => d.msg).join('; ') : detail
+      } else {
+        importError.value = `Erro: ${e.code ?? ''} ${e.message ?? ''} (HTTP ${e.response?.status ?? 'sem resposta'}).`
+      }
     } finally {
       importing.value = false
     }
@@ -646,6 +648,7 @@ function doFinalize() {
       : null
     const snapshot = roundPlayers.value.map(p => ({
       player_name: p.player_name,
+      colocacao: p.colocacao,
       valor: p.buyin * (config.value?.buyin_value || 50) + p.addon * (config.value?.addon_value || 50),
     }))
 
@@ -654,7 +657,7 @@ function doFinalize() {
       finalizeResult.value = await finalize()
       if (marcio?.pix) {
         pixCodes.value = snapshot
-          .filter(p => p.valor > 0)
+          .filter(p => p.valor > 0 && p.colocacao !== 1 && p.colocacao !== 2)
           .map(p => ({
             player_name: p.player_name,
             receiverName: marcio.name,

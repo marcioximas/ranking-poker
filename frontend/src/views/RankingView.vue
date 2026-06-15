@@ -256,3 +256,27 @@ async function doDeleteRound() {
 
 onMounted(fetch)
 </script>
+
+<style scoped>
+/* Sticky first 2 columns */
+table :is(th, td):nth-child(1),
+table :is(th, td):nth-child(2) {
+  position: sticky;
+  z-index: 1;
+  background: var(--bg);
+}
+table :is(th, td):nth-child(1) { left: 0; }
+table :is(th, td):nth-child(2) { left: 44px; }
+
+/* Header cells need darker bg and higher z-index */
+table th:nth-child(1),
+table th:nth-child(2) {
+  background: #0f2a1a;
+  z-index: 2;
+}
+
+/* Visual separator after the frozen columns */
+table :is(th, td):nth-child(2) {
+  box-shadow: 3px 0 8px -2px rgba(0, 0, 0, 0.6);
+}
+</style>
