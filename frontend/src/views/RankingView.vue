@@ -32,6 +32,7 @@
           {{ editMode ? 'Bloquear' : 'Desbloquear' }}
         </button>
         <button v-if="editMode" class="btn btn-primary btn-sm" @click="openAddRound">+ Nova Rodada</button>
+        <button v-if="editMode" class="btn btn-ghost btn-sm"   @click="openRenameRound">✎ Renomear</button>
         <button v-if="editMode" class="btn btn-danger btn-sm"  @click="openDeleteRound">✕ Excluir Rodada</button>
         <button v-if="editMode" class="btn btn-ghost btn-sm"   @click="saveActiveRounds">💾 Salvar como padrão</button>
       </span>
@@ -109,6 +110,27 @@
     </div>
   </BaseModal>
 
+  <!-- Rename Round Modal -->
+  <BaseModal v-if="showRenameRound" @close="showRenameRound = false">
+    <h2>Renomear Rodada</h2>
+    <div class="form-grid">
+      <div class="field full">
+        <label>Rodada</label>
+        <select v-model.number="renameRoundId" @change="renameLabel = allRounds.find(r => r.id === renameRoundId)?.label ?? ''">
+          <option v-for="r in allRounds" :key="r.id" :value="r.id">{{ r.label }}</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>Novo nome</label>
+        <input type="text" v-model="renameLabel" placeholder="ex: Rodada 01 - 01/07" autofocus @keyup.enter="doRenameRound" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" @click="doRenameRound">Renomear</button>
+      <button class="btn btn-ghost"   @click="showRenameRound = false">Cancelar</button>
+    </div>
+  </BaseModal>
+
   <!-- Delete Round Modal -->
   <BaseModal v-if="showDeleteRound" @close="showDeleteRound = false">
     <h2>Excluir Rodada</h2>
@@ -146,7 +168,10 @@ const editMode = ref(false)
 
 const showAddRound    = ref(false)
 const showDeleteRound = ref(false)
+const showRenameRound = ref(false)
 const deleteRoundId   = ref(null)
+const renameRoundId   = ref(null)
+const renameLabel     = ref('')
 const roundForm       = ref({ label: '', date: '' })
 
 const scoreModal = ref({ show: false, playerId: null, roundId: null, playerName: '', roundLabel: '', value: 0 })
@@ -222,6 +247,23 @@ async function doSaveScore() {
 }
 
 function openAddRound()    { roundForm.value = { label: '', date: '' }; showAddRound.value = true }
+function openRenameRound() {
+  renameRoundId.value = allRounds.value[0]?.id ?? null
+  renameLabel.value = allRounds.value[0]?.label ?? ''
+  showRenameRound.value = true
+}
+async function doRenameRound() {
+  const r = allRounds.value.find(x => x.id === renameRoundId.value)
+  if (!r || !renameLabel.value.trim()) return
+  try {
+    await roundsApi.update(r.id, { label: renameLabel.value.trim() })
+    await fetch()
+    showRenameRound.value = false
+    toast(`Rodada renomeada para "${renameLabel.value.trim()}" ✓`)
+  } catch (e) {
+    toast(e.response?.data?.detail || 'Erro ao renomear rodada.')
+  }
+}
 function openDeleteRound() {
   deleteRoundId.value = allRounds.value[0]?.id ?? null
   showDeleteRound.value = true
