@@ -11,6 +11,47 @@
 
     <!-- No current round -->
     <template v-if="!currentRound">
+      <!-- PIX charges from last round -->
+      <div v-if="pixCodes.length" style="margin-bottom:24px">
+        <p style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+          Cobranças PIX — {{ pixCodes[0]?.receiverName }}
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Jogador</th>
+                <th style="text-align:right">Valor</th>
+                <th style="text-align:center;width:120px">Copiar</th>
+                <th style="text-align:center;width:110px">Download</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in pixCodes" :key="item.player_name">
+                <td class="name">{{ item.player_name }}</td>
+                <td style="text-align:right;color:var(--gold);font-weight:500">{{ brl(item.valor) }}</td>
+                <td style="text-align:center">
+                  <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" @click="copyPixCode(item)">
+                    {{ item.copied ? '✓ Copiado' : 'Copiar PIX' }}
+                  </button>
+                </td>
+                <td style="text-align:center">
+                  <a
+                    class="btn btn-ghost"
+                    style="padding:4px 10px;font-size:11px;text-decoration:none;display:inline-block"
+                    :href="'data:text/plain;charset=utf-8,' + encodeURIComponent(item.code)"
+                    :download="'pix-' + item.player_name + '.txt'"
+                  >⬇ .txt</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="text-align:right;margin-top:8px">
+          <button class="btn btn-ghost btn-sm" style="font-size:11px" @click="pixCodes = []">✕ Limpar</button>
+        </div>
+      </div>
+
       <div class="empty">
         <div class="empty-icon">♠</div>
         <p>Nenhuma rodada em andamento.<br>Inicie uma nova rodada para começar.</p>
@@ -311,7 +352,7 @@
       </div>
 
       <div class="modal-actions">
-        <button class="btn btn-gold" @click="showFinalize = false; finalizeResult = null; pixCodes = []">Fechar</button>
+        <button class="btn btn-gold" @click="showFinalize = false; finalizeResult = null">Fechar</button>
       </div>
     </template>
   </BaseModal>
@@ -414,6 +455,7 @@ async function doCreateRound() {
     fd.append('dry_run', 'false')
 
     const { data } = await roundsApi.importCsv(fd)
+    pixCodes.value = []
     await fetchCurrent()
     closeImport()
     toast(`Rodada "${data.round_label}" criada com ${data.players_added} jogadores! ✓`)
@@ -529,6 +571,7 @@ async function doStartRound() {
       return
     }
     setAdminPassword(startForm.value.password)
+    pixCodes.value = []
     await startRound(startForm.value.label, startForm.value.date || null)
     showStartModal.value = false
     startForm.value = { label: '', date: '', password: '' }
