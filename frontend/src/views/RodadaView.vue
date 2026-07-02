@@ -175,9 +175,12 @@
         <label>Colocação</label>
         <select v-model.number="form.colocacao">
           <option :value="0" disabled>— Selecione —</option>
-          <option v-for="pos in roundPlayers.length" :key="pos" :value="pos">
-            {{ pos === 1 ? '🥇 1º lugar' : pos === 2 ? '🥈 2º lugar' : pos === 3 ? '🥉 3º lugar' : pos + 'º lugar' }}
-          </option>
+          <option
+            v-for="pos in roundPlayers.length"
+            :key="pos"
+            :value="pos"
+            v-if="!takenPositions.has(pos)"
+          >{{ pos === 1 ? '🥇 1º lugar' : pos === 2 ? '🥈 2º lugar' : pos === 3 ? '🥉 3º lugar' : pos + 'º lugar' }}</option>
         </select>
       </div>
       <div class="field">
@@ -516,6 +519,16 @@ const sortedPlayers = computed(() =>
 const leader    = computed(() => sortedPlayers.value[0] ?? null)
 const player1st = computed(() => roundPlayers.value.find(p => (p.colocacao || 0) === 1) ?? null)
 const player2nd = computed(() => roundPlayers.value.find(p => (p.colocacao || 0) === 2) ?? null)
+
+// Positions already taken by OTHER players (not the one being edited)
+const takenPositions = computed(() => {
+  const editingId = editingPlayer.value?.player_id ?? null
+  return new Set(
+    roundPlayers.value
+      .filter(p => p.player_id !== editingId && p.colocacao > 0)
+      .map(p => p.colocacao)
+  )
+})
 
 const availablePlayers = computed(() => {
   const inRound = new Set(roundPlayers.value.map(p => p.player_id))
