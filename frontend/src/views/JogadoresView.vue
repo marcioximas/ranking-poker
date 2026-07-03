@@ -3,8 +3,8 @@
     <!-- Stats -->
     <div class="stat-grid">
       <StatCard label="JOGADORES CADASTRADOS" :value="players.length" variant="white" />
-      <StatCard label="COM TELEFONE" :value="players.filter(p => p.telefone).length" variant="white" />
-      <StatCard label="COM PIX"      :value="players.filter(p => p.pix).length"      variant="white" />
+      <StatCard v-if="isUnlocked" label="COM TELEFONE" :value="players.filter(p => p.telefone).length" variant="white" />
+      <StatCard v-if="isUnlocked" label="COM PIX"      :value="players.filter(p => p.pix).length"      variant="white" />
     </div>
 
     <!-- Toolbar -->
@@ -19,8 +19,8 @@
           <tr>
             <th style="width:44px">#</th>
             <th style="width:160px">Nome</th>
-            <th>Telefone</th>
-            <th>PIX</th>
+            <th v-if="isUnlocked">Telefone</th>
+            <th v-if="isUnlocked">PIX</th>
             <th style="width:110px"></th>
           </tr>
         </thead>
@@ -28,8 +28,8 @@
           <tr v-for="(p, i) in players" :key="p.id">
             <td class="zero">{{ i + 1 }}</td>
             <td class="name">{{ p.name }}</td>
-            <td :class="p.telefone ? 'num' : 'zero'">{{ p.telefone || '—' }}</td>
-            <td :class="p.pix ? 'num' : 'zero'">{{ p.pix || '—' }}</td>
+            <td v-if="isUnlocked" :class="p.telefone ? 'num' : 'zero'">{{ p.telefone || '—' }}</td>
+            <td v-if="isUnlocked" :class="p.pix ? 'num' : 'zero'">{{ p.pix || '—' }}</td>
             <td style="text-align:right;padding-right:8px">
               <button class="btn btn-ghost btn-sm" @click="openEdit(p)" style="margin-right:4px">✎ Editar</button>
               <button class="btn btn-danger btn-sm" @click="doRemove(p)">✕</button>
@@ -58,7 +58,7 @@
           @keyup.enter="doSave"
         />
       </div>
-      <div class="field full">
+      <div v-if="isUnlocked" class="field full">
         <label>Telefone *</label>
         <input
           type="tel"
@@ -67,7 +67,7 @@
           @keyup.enter="doSave"
         />
       </div>
-      <div class="field full">
+      <div v-if="isUnlocked" class="field full">
         <label>PIX *</label>
         <input
           type="text"
@@ -95,7 +95,7 @@ import { playersApi } from '../api'
 import { useAuth }  from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 
-const { requireAuth } = useAuth()
+const { requireAuth, isUnlocked } = useAuth()
 const { show: toast } = useToast()
 
 const players   = ref([])
