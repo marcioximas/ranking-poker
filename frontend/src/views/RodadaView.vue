@@ -65,11 +65,53 @@
 
     <!-- Current round active -->
     <template v-else>
+      <div v-if="roundLocked" style="margin-bottom:10px;font-size:12px;color:var(--gold)">
+        🔒 Rodada trancada: apenas <strong>Colocação</strong> e <strong>Bônus ITM</strong> podem ser editados.
+      </div>
+
+      <div v-if="pixCodes.length" style="margin-bottom:14px">
+        <p style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">
+          Cobranças PIX — {{ pixCodes[0]?.receiverName }}
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Jogador</th>
+                <th style="text-align:right">Valor</th>
+                <th style="text-align:center;width:120px">Copiar</th>
+                <th style="text-align:center;width:110px">Download</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in pixCodes" :key="item.player_name">
+                <td class="name">{{ item.player_name }}</td>
+                <td style="text-align:right;color:var(--gold);font-weight:500">{{ brl(item.valor) }}</td>
+                <td style="text-align:center">
+                  <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" @click="copyPixCode(item)">
+                    {{ item.copied ? '✓ Copiado' : 'Copiar PIX' }}
+                  </button>
+                </td>
+                <td style="text-align:center">
+                  <a
+                    class="btn btn-ghost"
+                    style="padding:4px 10px;font-size:11px;text-decoration:none;display:inline-block"
+                    :href="'data:text/plain;charset=utf-8,' + encodeURIComponent(item.code)"
+                    :download="'pix-' + item.player_name + '.txt'"
+                  >⬇ .txt</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="toolbar">
-        <button class="btn btn-primary" @click="openAdd">+ Adicionar Jogador</button>
+        <button class="btn btn-primary" @click="openAdd" :disabled="roundLocked">+ Adicionar Jogador</button>
         <button class="btn btn-ghost"   @click="openEdit">✎ Editar</button>
-        <button class="btn btn-danger btn-sm" @click="doRemove">✕ Remover</button>
-        <button class="btn btn-gold" style="margin-left:auto" @click="openFinalize">✓ Finalizar Rodada</button>
+        <button class="btn btn-danger btn-sm" @click="doRemove" :disabled="roundLocked">✕ Remover</button>
+        <button class="btn btn-primary" style="margin-left:auto" @click="doLockRound" :disabled="roundLocked">🔒 Trancar Rodada</button>
+        <button class="btn btn-gold" @click="openFinalize" :disabled="!roundLocked">✓ Finalizar Rodada</button>
       </div>
 
       <div class="table-wrap">
@@ -165,11 +207,11 @@
       </div>
       <div class="field">
         <label>Buy-in / Rebuys</label>
-        <input type="number" v-model.number="form.buyin" min="0" />
+        <input type="number" v-model.number="form.buyin" min="0" :disabled="roundLocked && !!editingPlayer" />
       </div>
       <div class="field">
         <label>Addons</label>
-        <input type="number" v-model.number="form.addon" min="0" />
+        <input type="number" v-model.number="form.addon" min="0" :disabled="roundLocked && !!editingPlayer" />
       </div>
       <div class="field">
         <label>Colocação</label>
@@ -193,18 +235,18 @@
       </div>
       <div class="field">
         <label>Indicação (pts)</label>
-        <input type="number" v-model.number="form.indicacao" min="0" />
+        <input type="number" v-model.number="form.indicacao" min="0" :disabled="roundLocked && !!editingPlayer" />
       </div>
       <div class="field">
         <label>Presença (+{{ presencaPts }} pts)</label>
-        <select v-model.number="form.presenca">
+        <select v-model.number="form.presenca" :disabled="roundLocked && !!editingPlayer">
           <option :value="presencaPts">Presente</option>
           <option :value="0">Ausente</option>
         </select>
       </div>
       <div class="field">
         <label>Pontual? (+{{ pontPts }} pts)</label>
-        <select v-model.number="form.pontualidade">
+        <select v-model.number="form.pontualidade" :disabled="roundLocked && !!editingPlayer">
           <option :value="pontPts">Sim</option>
           <option :value="0">Não</option>
         </select>
@@ -385,6 +427,7 @@ const showFinalize    = ref(false)
 const editingPlayer   = ref(null)
 const finalizeResult  = ref(null)
 const pixCodes        = ref([])
+const roundLocked     = ref(false)
 const saving          = ref(false)
 const finalizing      = ref(false)
 const starting        = ref(false)
@@ -459,6 +502,7 @@ async function doCreateRound() {
 
     const { data } = await roundsApi.importCsv(fd)
     pixCodes.value = []
+    roundLocked.value = false
     await fetchCurrent()
     closeImport()
     toast(`Rodada "${data.round_label}" criada com ${data.players_added} jogadores! ✓`)
@@ -560,6 +604,10 @@ function resetForm() {
 }
 
 function openAdd() {
+  if (roundLocked.value) {
+    toast('Rodada trancada. Não é possível adicionar jogadores.')
+    return
+  }
   editingPlayer.value = null
   resetForm()
   showPlayerModal.value = true
@@ -595,6 +643,7 @@ async function doStartRound() {
     }
     setAdminPassword(startForm.value.password)
     pixCodes.value = []
+    roundLocked.value = false
     await startRound(startForm.value.label, startForm.value.date || null)
     showStartModal.value = false
     startForm.value = { label: '', date: '', password: '' }
@@ -607,18 +656,32 @@ async function doStartRound() {
 }
 
 async function doSavePlayer() {
+  if (roundLocked.value && !editingPlayer.value) {
+    formError.value = 'Rodada trancada. Não é possível adicionar jogadores.'
+    return
+  }
   if (!form.value.name.trim()) { formError.value = 'Nome é obrigatório.'; return }
   formError.value = ''
   requireAuth(async () => {
     saving.value = true
     try {
       if (editingPlayer.value) {
+        const payload = roundLocked.value
+          ? {
+              colocacao: form.value.colocacao,
+              bonus: form.value.bonus,
+            }
+          : {
+              buyin: form.value.buyin,
+              addon: form.value.addon,
+              colocacao: form.value.colocacao,
+              presenca: form.value.presenca,
+              bonus: form.value.bonus,
+              indicacao: form.value.indicacao,
+              pontualidade: form.value.pontualidade,
+            }
         await updatePlayer(editingPlayer.value.player_id, {
-          buyin: form.value.buyin, addon: form.value.addon,
-          colocacao: form.value.colocacao,
-          presenca: form.value.presenca,
-          bonus: form.value.bonus, indicacao: form.value.indicacao,
-          pontualidade: form.value.pontualidade,
+          ...payload,
         })
         toast('Jogador atualizado! ✓')
       } else {
@@ -642,6 +705,10 @@ async function doSavePlayer() {
 }
 
 function doRemove() {
+  if (roundLocked.value) {
+    toast('Rodada trancada. Não é possível remover jogadores.')
+    return
+  }
   if (!selectedId.value) { toast('Selecione um jogador na tabela para remover.'); return }
   const p = roundPlayers.value.find(x => x.player_id === selectedId.value)
   if (!p || !confirm(`Remover "${p.player_name}"?`)) return
@@ -698,6 +765,10 @@ function gerarPixCopiaCola(chave, nome, valor) {
 }
 
 function openFinalize() {
+  if (!roundLocked.value) {
+    toast('Tranque a rodada antes de finalizar.')
+    return
+  }
   const sem = roundPlayers.value.filter(p => !p.colocacao)
   if (sem.length) {
     toast(`Defina a colocação de: ${sem.map(p => p.player_name).join(', ')}`)
@@ -706,34 +777,60 @@ function openFinalize() {
   showFinalize.value = true
 }
 
-function doFinalize() {
-  requireAuth(async () => {
-    // Snapshot buy-ins and PIX receiver's key before round data is cleared
-    const marcio = config.value?.pix_receiver_player_id
-      ? allPlayers.value.find(p => p.id === config.value.pix_receiver_player_id)
-      : null
-    const snapshot = roundPlayers.value.map(p => ({
+function buildPixCodesForAllPlayers() {
+  const receiver = config.value?.pix_receiver_player_id
+    ? allPlayers.value.find(p => p.id === config.value.pix_receiver_player_id)
+    : null
+
+  if (!receiver?.pix) {
+    return {
+      ok: false,
+      message: 'Configure um recebedor com chave PIX na aba Configurações.',
+      codes: [],
+    }
+  }
+
+  const codes = roundPlayers.value
+    .map(p => ({
       player_name: p.player_name,
-      colocacao: p.colocacao,
+      receiverName: receiver.name,
       valor: calcEntryValue(p.buyin) + p.addon * (config.value?.addon_value || 50),
     }))
+    .filter(p => p.valor > 0)
+    .map(p => ({
+      ...p,
+      code: gerarPixCopiaCola(receiver.pix, receiver.name, p.valor),
+      copied: false,
+    }))
 
+  return { ok: true, codes }
+}
+
+function doLockRound() {
+  if (!currentRound.value) return
+  if (!roundPlayers.value.length) {
+    toast('Adicione jogadores antes de trancar a rodada.')
+    return
+  }
+
+  requireAuth(async () => {
+    const { ok, message, codes } = buildPixCodesForAllPlayers()
+    if (!ok) {
+      toast(message)
+      return
+    }
+    pixCodes.value = codes
+    roundLocked.value = true
+    toast('Rodada trancada! PIX gerado para todos os jogadores. ✓')
+  })
+}
+
+function doFinalize() {
+  requireAuth(async () => {
     finalizing.value = true
     try {
       finalizeResult.value = await finalize()
-      if (marcio?.pix) {
-        pixCodes.value = snapshot
-          .filter(p => p.valor > 0 && p.colocacao !== 1 && p.colocacao !== 2)
-          .map(p => ({
-            player_name: p.player_name,
-            receiverName: marcio.name,
-            valor: p.valor,
-            code: gerarPixCopiaCola(marcio.pix, marcio.name, p.valor),
-            copied: false,
-          }))
-      } else {
-        pixCodes.value = []
-      }
+      roundLocked.value = false
       toast('Rodada finalizada e salva no ranking! ✓')
     } catch (e) {
       toast(e.response?.data?.detail || 'Erro ao finalizar.')

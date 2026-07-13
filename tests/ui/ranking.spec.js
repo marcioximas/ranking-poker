@@ -20,6 +20,10 @@ test.describe('Ranking Semestral', () => {
     // Deve ter pelo menos uma linha de dados no ranking (header + dados)
     const rowCount = await ranking.table.getByRole('row').count()
     expect(rowCount).toBeGreaterThanOrEqual(2)
+
+    await expect(ranking.table.getByRole('columnheader', { name: 'Buy-ins' })).toBeVisible()
+    await expect(ranking.table.getByRole('columnheader', { name: 'Rebuys' })).toBeVisible()
+    await expect(ranking.table.getByRole('columnheader', { name: 'Addons' })).toBeVisible()
   })
 
   test('filtra rodadas localmente clicando nos pills sem precisar de auth', async ({ page }) => {

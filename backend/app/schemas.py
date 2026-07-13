@@ -131,6 +131,9 @@ class RankingRow(BaseModel):
     player_id: int
     player_name: str
     scores: Dict[int, int]
+    buyins: Dict[int, int]
+    rebuys: Dict[int, int]
+    addons: Dict[int, int]
     total: int
 
 
