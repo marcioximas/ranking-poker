@@ -35,6 +35,13 @@ test.describe('Ranking Semestral', () => {
     const totalIndex = headers.lastIndexOf('Total')
     expect(totalIndex).toBe(headers.length - 1)
 
+    const buyinsIndex = headers.indexOf('Buy-ins')
+    const rebuysIndex = headers.indexOf('Rebuys')
+    const addonsIndex = headers.indexOf('Addons')
+    expect(buyinsIndex).toBeGreaterThan(1)
+    expect(rebuysIndex).toBe(buyinsIndex + 1)
+    expect(addonsIndex).toBe(rebuysIndex + 1)
+
     const roundNumbers = headers
       .filter((text) => /^Rodada\s+\d+/i.test(text))
       .map((text) => {
@@ -42,6 +49,12 @@ test.describe('Ranking Semestral', () => {
         return match ? parseInt(match[1], 10) : null
       })
       .filter((n) => Number.isFinite(n))
+
+    const firstRoundLabel = headers.find((text) => /^Rodada\s+\d+/i.test(text))
+    if (firstRoundLabel) {
+      const firstRoundIndex = headers.indexOf(firstRoundLabel)
+      expect(firstRoundIndex).toBe(addonsIndex + 1)
+    }
 
     const sorted = [...roundNumbers].sort((a, b) => a - b)
     expect(roundNumbers).toEqual(sorted)

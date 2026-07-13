@@ -45,12 +45,12 @@
           <tr>
             <th style="width:44px">#</th>
             <th style="width:130px">Nome</th>
-            <th v-for="r in orderedActiveRounds" :key="r.id" style="width:75px;font-size:10px">
-              {{ r.label.replace(' - ', ' ') }}
-            </th>
             <th style="width:80px">Buy-ins</th>
             <th style="width:80px">Rebuys</th>
             <th style="width:80px">Addons</th>
+            <th v-for="r in orderedActiveRounds" :key="r.id" style="width:75px;font-size:10px">
+              {{ r.label.replace(' - ', ' ') }}
+            </th>
             <th style="width:80px">Total</th>
           </tr>
         </thead>
@@ -58,6 +58,9 @@
           <tr v-for="(row, i) in rows" :key="row.player_id">
             <td class="medal">{{ medals[i] || i + 1 }}</td>
             <td class="name">{{ row.player_name }}</td>
+            <td class="num">{{ row.total_buyins }}</td>
+            <td :class="row.total_rebuys > 0 ? 'num' : 'zero'">{{ row.total_rebuys }}</td>
+            <td :class="row.total_addons > 0 ? 'num' : 'zero'">{{ row.total_addons }}</td>
             <td
               v-for="r in orderedActiveRounds"
               :key="r.id"
@@ -66,9 +69,6 @@
             >
               {{ score(row, r.id) }}
             </td>
-            <td class="num">{{ row.total_buyins }}</td>
-            <td :class="row.total_rebuys > 0 ? 'num' : 'zero'">{{ row.total_rebuys }}</td>
-            <td :class="row.total_addons > 0 ? 'num' : 'zero'">{{ row.total_addons }}</td>
             <td class="total">{{ row.total }}</td>
           </tr>
         </tbody>
