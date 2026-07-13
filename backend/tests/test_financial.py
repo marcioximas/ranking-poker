@@ -42,7 +42,7 @@ def test_financial_caixa_includes_round_buyin(client, auth, player, current_roun
     data = r.json()
     assert data["total_buyins"] == 2
     assert data["total_addons"] == 1
-    assert data["caixa_noite"] == 90.0 + 80.0 + 1 * 50.0  # 220.0 (buy-in desconta R$10 aluguel)
+    assert data["caixa_noite"] == 100.0 + 80.0 + 1 * 50.0  # 230.0 (taxa fica no caixa)
 
 
 def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth):
@@ -86,14 +86,14 @@ def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth
     )
 
     data = client.get("/api/financial").json()
-    # Histórico: (90 + 80 + 50) + (90) = 310
-    assert data["caixa_anterior"] == 310.0
-    # Ranking anterior fica zerado por regra.
-    assert data["ranking_anterior"] == 0.0
+    # Histórico base sem taxa: ((100+80)-20+50) + (100-10) = 300
+    # Caixa anterior histórico: taxa (20+10) + 7.5% de 300 = 52.5
+    assert data["caixa_anterior"] == 52.5
+    # Ranking anterior histórico: 7.5% de 300 = 22.5
+    assert data["ranking_anterior"] == 22.5
     # Sem rodada atual aberta: totais atuais refletem apenas acumulado anterior.
-    assert data["caixa_atual"] == 310.0
-    # Ranking total agrega 7.5% do arrecadado das rodadas históricas.
-    assert data["ranking_total"] == 23.25
+    assert data["caixa_atual"] == 52.5
+    assert data["ranking_total"] == 22.5
 
 
 # ── Expenses ────────────────────────────────────────────────────────────────

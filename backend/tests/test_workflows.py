@@ -86,7 +86,7 @@ class TestFullRoundLifecycle:
         fin = client.get("/api/financial").json()
         assert fin["total_buyins"] == 3
         assert fin["total_addons"] == 1
-        assert fin["caixa_noite"] == pytest.approx((3 * 50.0 - 2 * 10.0) + 1 * 50.0)
+        assert fin["caixa_noite"] == pytest.approx(3 * 50.0 + 1 * 50.0)
 
     def test_historical_round_does_not_affect_financial(self, client, auth, two_players):
         """Finalized rounds don't contribute to current financial summary."""

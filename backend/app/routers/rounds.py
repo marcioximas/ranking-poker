@@ -12,18 +12,21 @@ from ..schemas import (
 
 router = APIRouter(prefix="/rounds", tags=["Rodadas"])
 
-BUYIN_RENT_DISCOUNT = 10.0
+ENTRY_FEE = 10.0
 
 
-def _entry_amount(entries: int, config: Config) -> float:
+def _entry_gross(entries: int, config: Config) -> float:
     if entries <= 0:
         return 0.0
     buyin_value = config.buyin_value or 0
     rebuy_value = getattr(config, "rebuy_value", None)
     if rebuy_value is None:
         rebuy_value = buyin_value
-    buyin_liquido = max(buyin_value - BUYIN_RENT_DISCOUNT, 0.0)
-    return buyin_liquido + max(entries - 1, 0) * rebuy_value
+    return buyin_value + max(entries - 1, 0) * rebuy_value
+
+
+def _entry_fee(entries: int) -> float:
+    return max(entries, 0) * ENTRY_FEE
 
 
 def _calc_prize_points(
@@ -43,15 +46,15 @@ def _calc_prize_points(
     if rebuy_value is None:
         rebuy_value = buyin_value
 
-    buyin_liquido = max(buyin_value - BUYIN_RENT_DISCOUNT, 0.0)
-
     if players_with_buyin is None:
-        entries_value = total_buyins * buyin_liquido
+        gross_entries = total_buyins * buyin_value
     else:
         rebuys = max(total_buyins - players_with_buyin, 0)
-        entries_value = players_with_buyin * buyin_liquido + rebuys * rebuy_value
+        gross_entries = players_with_buyin * buyin_value + rebuys * rebuy_value
 
-    arrecadado = entries_value + total_addons * (config.addon_value or 0)
+    base_entries = max(gross_entries - _entry_fee(total_buyins), 0.0)
+
+    arrecadado = base_entries + total_addons * (config.addon_value or 0)
     prize_pool = arrecadado * 0.85
     if colocacao == 1:
         prize = prize_pool * 0.70
@@ -245,10 +248,13 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
     total_buyins = sum(rp.buyin for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
     players_with_buyin = sum(1 for rp in rps if (rp.buyin or 0) > 0)
-    total_entries_value = sum(_entry_amount(rp.buyin, config) for rp in rps)
-    caixa_noite = total_entries_value + total_addons * config.addon_value
-    premiacao_total = caixa_noite * 0.85
-    ranking_noite = caixa_noite * 0.075
+    total_entries_gross = sum(_entry_gross(rp.buyin, config) for rp in rps)
+    total_entry_fee = sum(_entry_fee(rp.buyin) for rp in rps)
+    total_addons_value = total_addons * (config.addon_value or 0)
+    base_noite = max(total_entries_gross - total_entry_fee, 0.0) + total_addons_value
+    caixa_noite = total_entries_gross + total_addons_value
+    premiacao_total = base_noite * 0.85
+    ranking_noite = base_noite * 0.075
 
     # Calculate pontos from colocacao using the prize pool formula
     for rp in rps:
