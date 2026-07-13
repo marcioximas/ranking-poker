@@ -45,6 +45,56 @@ def test_financial_caixa_includes_round_buyin(client, auth, player, current_roun
     assert data["caixa_noite"] == 100.0 + 80.0 + 1 * 50.0  # 230.0
 
 
+def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth):
+    client.put(
+        "/api/financial",
+        json={"caixa_anterior": 0.0, "ranking_anterior": 0.0},
+        headers=auth,
+    )
+
+    client.put(
+        "/api/config",
+        json={
+            "buyin_value": 100.0,
+            "rebuy_value": 80.0,
+            "addon_value": 50.0,
+            "tournament_name": "T",
+            "presence_points": 10,
+            "punctuality_points": 15,
+            "itm_bonus_points": 5,
+            "prize_pct": 70,
+            "ranking_pct": 15,
+        },
+        headers=auth,
+    )
+
+    p1 = client.post("/api/players", json={"name": "Jogador 1"}, headers=auth).json()
+    p2 = client.post("/api/players", json={"name": "Jogador 2"}, headers=auth).json()
+
+    r1 = client.post("/api/rounds", json={"label": "Rodada 01"}, headers=auth).json()
+    r2 = client.post("/api/rounds", json={"label": "Rodada 02"}, headers=auth).json()
+
+    client.post(
+        f"/api/rounds/{r1['id']}/players",
+        json={"player_id": p1["id"], "buyin": 2, "addon": 1},
+        headers=auth,
+    )
+    client.post(
+        f"/api/rounds/{r2['id']}/players",
+        json={"player_id": p2["id"], "buyin": 1, "addon": 0},
+        headers=auth,
+    )
+
+    data = client.get("/api/financial").json()
+    # Histórico: (100 + 80 + 50) + (100) = 330
+    assert data["caixa_anterior"] == 330.0
+    # 15% de 330 = 49.5
+    assert data["ranking_anterior"] == 49.5
+    # Sem rodada atual aberta: totais atuais refletem apenas acumulado anterior.
+    assert data["caixa_atual"] == 330.0
+    assert data["ranking_total"] == 49.5
+
+
 # ── Expenses ────────────────────────────────────────────────────────────────
 
 def test_list_expenses_empty(client):

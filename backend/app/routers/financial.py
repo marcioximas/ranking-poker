@@ -36,6 +36,12 @@ def _entry_amount(entries: int, config: Config) -> float:
     return buyin_value + max(entries - 1, 0) * rebuy_value
 
 
+def _round_caixa(round_: Round, config: Config) -> float:
+    rps: list[RoundPlayer] = round_.round_players or []
+    total_addons = sum(rp.addon for rp in rps)
+    return sum(_entry_amount(rp.buyin, config) for rp in rps) + total_addons * (config.addon_value or 0)
+
+
 # ── Financial summary ───────────────────────────────────────────────────────
 
 @router.get("/financial", response_model=FinancialSummary, summary="Resumo financeiro da rodada atual",
@@ -52,15 +58,23 @@ def get_financial(db: Session = Depends(get_db)):
     current_round = db.query(Round).filter(Round.is_current == True).first()
     rps: list[RoundPlayer] = current_round.round_players if current_round else []
 
+    historical_rounds = db.query(Round).filter(
+        Round.is_finalized == True,
+        Round.is_current == False,
+    ).all()
+
     total_buyins = sum(rp.buyin for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
     caixa_noite = sum(_entry_amount(rp.buyin, config) for rp in rps) + total_addons * config.addon_value
     premiacao_total = caixa_noite * (config.prize_pct / 100)
     ranking_noite = caixa_noite * (config.ranking_pct / 100)
 
+    historico_caixa = sum(_round_caixa(round_, config) for round_ in historical_rounds)
+    historico_ranking = historico_caixa * (config.ranking_pct / 100)
+
     total_despesas = sum(e.value for e in db.query(Expense).all())
-    caixa_anterior = fin.caixa_anterior
-    ranking_anterior = 0.0
+    caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa
+    ranking_anterior = (fin.ranking_anterior or 0.0) + historico_ranking
 
     caixa_atual = caixa_anterior + caixa_noite
     ranking_total = ranking_anterior + ranking_noite

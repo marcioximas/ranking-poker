@@ -26,6 +26,27 @@ test.describe('Ranking Semestral', () => {
     await expect(ranking.table.getByRole('columnheader', { name: 'Addons' })).toBeVisible()
   })
 
+  test('ordena colunas de rodada da menor para maior e deixa Total por último', async ({ page }) => {
+    const ranking = new RankingPage(page)
+    const headers = (await ranking.table.locator('thead th').allTextContents())
+      .map((text) => text.trim())
+      .filter(Boolean)
+
+    const totalIndex = headers.lastIndexOf('Total')
+    expect(totalIndex).toBe(headers.length - 1)
+
+    const roundNumbers = headers
+      .filter((text) => /^Rodada\s+\d+/i.test(text))
+      .map((text) => {
+        const match = text.match(/Rodada\s+(\d+)/i)
+        return match ? parseInt(match[1], 10) : null
+      })
+      .filter((n) => Number.isFinite(n))
+
+    const sorted = [...roundNumbers].sort((a, b) => a - b)
+    expect(roundNumbers).toEqual(sorted)
+  })
+
   test('filtra rodadas localmente clicando nos pills sem precisar de auth', async ({ page }) => {
     const ranking = new RankingPage(page)
 

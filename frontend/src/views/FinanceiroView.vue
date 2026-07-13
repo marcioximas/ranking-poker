@@ -163,7 +163,7 @@ onMounted(async () => {
   await fetch()
   if (summary.value) {
     cxAnt.value = summary.value.caixa_anterior
-    rkAnt.value = 0
+    rkAnt.value = summary.value.ranking_anterior
   }
 })
 </script>
