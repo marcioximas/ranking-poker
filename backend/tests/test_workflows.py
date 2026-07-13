@@ -38,9 +38,9 @@ class TestFullRoundLifecycle:
 
         ranking = client.get("/api/ranking").json()
         p1_row = next(row for row in ranking["rows"] if row["player_id"] == p1["id"])
-        # 2 buyins × R$50 = R$100 arrecadado; prize_pool = R$85
-        # 1st: int(85 × 0.70) // 10 = 59 // 10 = 5; presença = 5; total = 10
-        assert p1_row["total"] == 10
+        # 2 buyins: (50 - 10) × 2 = R$80; prize_pool = R$68
+        # 1st: int(68 × 0.70) // 10 = 47 // 10 = 4; presença = 5; total = 9
+        assert p1_row["total"] == 9
 
     def test_round_is_not_current_after_finalize(self, client, auth, two_players):
         p1, p2 = two_players
@@ -86,7 +86,7 @@ class TestFullRoundLifecycle:
         fin = client.get("/api/financial").json()
         assert fin["total_buyins"] == 3
         assert fin["total_addons"] == 1
-        assert fin["caixa_noite"] == pytest.approx(3 * 50.0 + 1 * 50.0)  # default config: buyin=50, addon=50
+        assert fin["caixa_noite"] == pytest.approx((3 * 50.0 - 2 * 10.0) + 1 * 50.0)
 
     def test_historical_round_does_not_affect_financial(self, client, auth, two_players):
         """Finalized rounds don't contribute to current financial summary."""
@@ -170,9 +170,8 @@ class TestMultipleRoundsRanking:
 
         ranking = client.get("/api/ranking").json()
         p1_row = next(row for row in ranking["rows"] if row["player_id"] == p1["id"])
-        # Each round: 2 buyins × R$50 = R$100; prize_pool = R$85
-        # 1st: int(85 × 0.70) // 10 = 5 pts × 2 rounds = 10
-        assert p1_row["total"] == 10
+        # Cada rodada: (50 - 10) × 2 = R$80; 1º recebe int(68 * 0.70) // 10 = 4.
+        assert p1_row["total"] == 8
 
     def test_inactive_round_excluded_from_total(self, client, auth, two_players):
         p1, p2 = two_players
@@ -190,8 +189,8 @@ class TestMultipleRoundsRanking:
 
         ranking = client.get("/api/ranking").json()
         p1_row = next(row for row in ranking["rows"] if row["player_id"] == p1["id"])
-        # Only first round active: int(85 × 0.70) // 10 = 5
-        assert p1_row["total"] == 5
+        # Somente uma rodada ativa: 1º lugar rende 4 pontos pela fórmula atual.
+        assert p1_row["total"] == 4
 
     def test_ranking_sorted_by_total_descending(self, client, auth, two_players):
         p1, p2 = two_players

@@ -12,6 +12,8 @@ from ..schemas import (
 
 router = APIRouter(prefix="/rounds", tags=["Rodadas"])
 
+BUYIN_RENT_DISCOUNT = 10.0
+
 
 def _entry_amount(entries: int, config: Config) -> float:
     if entries <= 0:
@@ -20,7 +22,8 @@ def _entry_amount(entries: int, config: Config) -> float:
     rebuy_value = getattr(config, "rebuy_value", None)
     if rebuy_value is None:
         rebuy_value = buyin_value
-    return buyin_value + max(entries - 1, 0) * rebuy_value
+    buyin_liquido = max(buyin_value - BUYIN_RENT_DISCOUNT, 0.0)
+    return buyin_liquido + max(entries - 1, 0) * rebuy_value
 
 
 def _calc_prize_points(
@@ -40,11 +43,13 @@ def _calc_prize_points(
     if rebuy_value is None:
         rebuy_value = buyin_value
 
+    buyin_liquido = max(buyin_value - BUYIN_RENT_DISCOUNT, 0.0)
+
     if players_with_buyin is None:
-        entries_value = total_buyins * buyin_value
+        entries_value = total_buyins * buyin_liquido
     else:
         rebuys = max(total_buyins - players_with_buyin, 0)
-        entries_value = players_with_buyin * buyin_value + rebuys * rebuy_value
+        entries_value = players_with_buyin * buyin_liquido + rebuys * rebuy_value
 
     arrecadado = entries_value + total_addons * (config.addon_value or 0)
     prize_pool = arrecadado * 0.85

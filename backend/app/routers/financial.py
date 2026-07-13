@@ -11,6 +11,9 @@ from ..schemas import (
 
 router = APIRouter(tags=["Financeiro"])
 
+RANKING_PCT_FIXED = 0.075
+BUYIN_RENT_DISCOUNT = 10.0
+
 
 def _get_or_create_financial(db: Session) -> Financial:
     fin = db.query(Financial).first()
@@ -33,7 +36,8 @@ def _entry_amount(entries: int, config: Config) -> float:
     rebuy_value = getattr(config, "rebuy_value", None)
     if rebuy_value is None:
         rebuy_value = buyin_value
-    return buyin_value + max(entries - 1, 0) * rebuy_value
+    buyin_liquido = max(buyin_value - BUYIN_RENT_DISCOUNT, 0.0)
+    return buyin_liquido + max(entries - 1, 0) * rebuy_value
 
 
 def _round_caixa(round_: Round, config: Config) -> float:
@@ -67,17 +71,17 @@ def get_financial(db: Session = Depends(get_db)):
     total_addons = sum(rp.addon for rp in rps)
     caixa_noite = sum(_entry_amount(rp.buyin, config) for rp in rps) + total_addons * config.addon_value
     premiacao_total = caixa_noite * (config.prize_pct / 100)
-    ranking_noite = caixa_noite * (config.ranking_pct / 100)
+    ranking_noite = caixa_noite * RANKING_PCT_FIXED
 
     historico_caixa = sum(_round_caixa(round_, config) for round_ in historical_rounds)
-    historico_ranking = historico_caixa * (config.ranking_pct / 100)
+    historico_ranking = historico_caixa * RANKING_PCT_FIXED
 
     total_despesas = sum(e.value for e in db.query(Expense).all())
     caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa
-    ranking_anterior = (fin.ranking_anterior or 0.0) + historico_ranking
+    ranking_anterior = 0.0
 
     caixa_atual = caixa_anterior + caixa_noite
-    ranking_total = ranking_anterior + ranking_noite
+    ranking_total = ranking_anterior + ranking_noite + historico_ranking
     caixa_com_despesas = caixa_atual - total_despesas
 
     return FinancialSummary(
