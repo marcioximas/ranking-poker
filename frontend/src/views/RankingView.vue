@@ -45,13 +45,16 @@
           <tr>
             <th style="width:44px">#</th>
             <th style="width:130px">Nome</th>
-            <th v-for="r in activeRounds" :key="r.id" style="width:75px;font-size:10px">
+            <th v-for="r in activeRoundsMain" :key="r.id" style="width:75px;font-size:10px">
               {{ r.label.replace(' - ', ' ') }}
             </th>
             <th style="width:80px">Buy-ins</th>
             <th style="width:80px">Rebuys</th>
             <th style="width:80px">Addons</th>
             <th style="width:80px">Total</th>
+            <th v-if="activeRound01" style="width:75px;font-size:10px">
+              {{ activeRound01.label.replace(' - ', ' ') }}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -59,7 +62,7 @@
             <td class="medal">{{ medals[i] || i + 1 }}</td>
             <td class="name">{{ row.player_name }}</td>
             <td
-              v-for="r in activeRounds"
+              v-for="r in activeRoundsMain"
               :key="r.id"
               :class="[score(row, r.id) > 0 ? 'num' : 'zero', editMode ? 'editable' : '']"
               @click="editMode && openEditScore(row, r)"
@@ -70,6 +73,13 @@
             <td :class="row.total_rebuys > 0 ? 'num' : 'zero'">{{ row.total_rebuys }}</td>
             <td :class="row.total_addons > 0 ? 'num' : 'zero'">{{ row.total_addons }}</td>
             <td class="total">{{ row.total }}</td>
+            <td
+              v-if="activeRound01"
+              :class="[score(row, activeRound01.id) > 0 ? 'num' : 'zero', editMode ? 'editable' : '']"
+              @click="editMode && openEditScore(row, activeRound01)"
+            >
+              {{ score(row, activeRound01.id) }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -194,6 +204,14 @@ watch(ranking, (val) => {
 const allRounds    = computed(() => ranking.value?.rounds ?? [])
 const activeIds    = computed(() => localActiveIds.value)
 const activeRounds = computed(() => allRounds.value.filter(r => localActiveIds.value.has(r.id)))
+const activeRound01 = computed(() =>
+  activeRounds.value.find(r => /^Rodada\s*0*1(\b|\s|\-|$)/i.test(r.label)) ?? null,
+)
+const activeRoundsMain = computed(() =>
+  activeRound01.value
+    ? activeRounds.value.filter(r => r.id !== activeRound01.value.id)
+    : activeRounds.value,
+)
 
 const sumByActiveRounds = (roundMap) =>
   [...localActiveIds.value].reduce(

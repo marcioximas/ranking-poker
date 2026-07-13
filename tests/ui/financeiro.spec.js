@@ -46,7 +46,7 @@ test.describe('Financeiro', () => {
     await navigateToFinanceiro(page)
     await expect(page.locator('.stat-grid').getByText('CAIXA ATUAL', { exact: true })).toBeVisible()
     await expect(page.locator('.stat-grid').getByText('RANKING TOTAL', { exact: true })).toBeVisible()
-    await expect(page.locator('.stat-grid').getByText('CAIXA C/ DESPESAS', { exact: true })).toBeVisible()
+    await expect(page.locator('.stat-grid').getByText('PREMIAÇÃO DA NOITE C/ DESPESAS', { exact: true })).toBeVisible()
   })
 
   test('exibe seção de histórico', async ({ page }) => {

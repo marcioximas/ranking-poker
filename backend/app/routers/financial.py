@@ -60,7 +60,7 @@ def get_financial(db: Session = Depends(get_db)):
 
     total_despesas = sum(e.value for e in db.query(Expense).all())
     caixa_anterior = fin.caixa_anterior
-    ranking_anterior = fin.ranking_anterior
+    ranking_anterior = 0.0
 
     caixa_atual = caixa_anterior + caixa_noite
     ranking_total = ranking_anterior + ranking_noite
