@@ -8,6 +8,7 @@ from datetime import date as Date
 class ConfigUpdate(BaseModel):
     tournament_name: str = "Poker Night"
     buyin_value: float = Field(50.0, ge=0)
+    rebuy_value: float = Field(50.0, ge=0)
     addon_value: float = Field(50.0, ge=0)
     presence_points: int = Field(10, ge=0)
     punctuality_points: int = Field(15, ge=0)

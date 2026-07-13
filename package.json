@@ -6,7 +6,8 @@
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "test:all": "powershell -ExecutionPolicy Bypass -File scripts/test-all.ps1"
   },
   "keywords": [],
   "author": "",

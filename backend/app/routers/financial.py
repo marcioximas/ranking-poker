@@ -26,6 +26,16 @@ def _calc_total(rp: RoundPlayer) -> int:
     return (rp.pontos or 0) + (rp.presenca or 0) + (rp.bonus or 0) + (rp.indicacao or 0) + (rp.pontualidade or 0)
 
 
+def _entry_amount(entries: int, config: Config) -> float:
+    if entries <= 0:
+        return 0.0
+    buyin_value = config.buyin_value or 0
+    rebuy_value = getattr(config, "rebuy_value", None)
+    if rebuy_value is None:
+        rebuy_value = buyin_value
+    return buyin_value + max(entries - 1, 0) * rebuy_value
+
+
 # ── Financial summary ───────────────────────────────────────────────────────
 
 @router.get("/financial", response_model=FinancialSummary, summary="Resumo financeiro da rodada atual",
@@ -44,22 +54,13 @@ def get_financial(db: Session = Depends(get_db)):
 
     total_buyins = sum(rp.buyin for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
-    caixa_noite = total_buyins * config.buyin_value + total_addons * config.addon_value
+    caixa_noite = sum(_entry_amount(rp.buyin, config) for rp in rps) + total_addons * config.addon_value
     premiacao_total = caixa_noite * (config.prize_pct / 100)
     ranking_noite = caixa_noite * (config.ranking_pct / 100)
 
-    # Auto-computed: caixa_anterior = total accumulated expenses
     total_despesas = sum(e.value for e in db.query(Expense).all())
-    caixa_anterior = total_despesas
-
-    # Auto-computed: ranking_anterior = sum of ranking contributions from all finalized rounds
-    finalized_rounds = db.query(Round).filter(Round.is_finalized == True).all()
-    ranking_anterior = sum(
-        (sum(rp.buyin for rp in r.round_players) * config.buyin_value +
-         sum(rp.addon for rp in r.round_players) * config.addon_value)
-        * (config.ranking_pct / 100)
-        for r in finalized_rounds
-    )
+    caixa_anterior = fin.caixa_anterior
+    ranking_anterior = fin.ranking_anterior
 
     caixa_atual = caixa_anterior + caixa_noite
     ranking_total = ranking_anterior + ranking_noite

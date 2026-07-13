@@ -28,8 +28,8 @@ test.describe('Rodada Atual', () => {
   })
 
   test('stat cards exibem zeros quando não há rodada', async ({ page }) => {
-    await expect(page.getByText('JOGADORES')).toBeVisible()
     const statGrid = page.locator('.stat-grid')
+    await expect(statGrid.getByText('JOGADORES', { exact: true })).toBeVisible()
     await expect(statGrid.getByText('0').first()).toBeVisible()
   })
 

@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ximas2026@'
+
 export default defineConfig({
   testDir: './tests/ui',
   fullyParallel: false,
@@ -24,6 +26,10 @@ export default defineConfig({
     {
       command: 'cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000',
       url: 'http://localhost:8000/health',
+      env: {
+        ...process.env,
+        ADMIN_PASSWORD,
+      },
       reuseExistingServer: true,
       timeout: 15_000,
     },

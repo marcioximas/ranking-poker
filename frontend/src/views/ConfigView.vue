@@ -6,40 +6,44 @@
 
     <div class="config-grid" v-if="form">
       <div class="field">
-        <label>Nome do torneio</label>
-        <input type="text" v-model="form.tournament_name" />
+        <label for="cfg-tournament-name">Nome do torneio</label>
+        <input id="cfg-tournament-name" type="text" v-model="form.tournament_name" />
       </div>
       <div class="field">
-        <label>Buy-in / Rebuy (R$)</label>
-        <input type="number" v-model.number="form.buyin_value" min="0" step="0.5" />
+        <label for="cfg-buyin">Buy-in (R$)</label>
+        <input id="cfg-buyin" type="number" v-model.number="form.buyin_value" min="0" step="0.5" />
       </div>
       <div class="field">
-        <label>Addon (R$)</label>
-        <input type="number" v-model.number="form.addon_value" min="0" step="0.5" />
+        <label for="cfg-rebuy">Rebuy (R$)</label>
+        <input id="cfg-rebuy" type="number" v-model.number="form.rebuy_value" min="0" step="0.5" />
       </div>
       <div class="field">
-        <label>Pontos presença</label>
-        <input type="number" v-model.number="form.presence_points" min="0" />
+        <label for="cfg-addon">Addon (R$)</label>
+        <input id="cfg-addon" type="number" v-model.number="form.addon_value" min="0" step="0.5" />
       </div>
       <div class="field">
-        <label>Pontos pontualidade</label>
-        <input type="number" v-model.number="form.punctuality_points" min="0" />
+        <label for="cfg-presence">Pontos presença</label>
+        <input id="cfg-presence" type="number" v-model.number="form.presence_points" min="0" />
       </div>
       <div class="field">
-        <label>Bônus ITM (pontos)</label>
-        <input type="number" v-model.number="form.itm_bonus_points" min="0" />
+        <label for="cfg-punctuality">Pontos pontualidade</label>
+        <input id="cfg-punctuality" type="number" v-model.number="form.punctuality_points" min="0" />
       </div>
       <div class="field">
-        <label>% Premiação da noite</label>
-        <input type="number" v-model.number="form.prize_pct" min="0" max="100" />
+        <label for="cfg-itm">Bônus ITM (pontos)</label>
+        <input id="cfg-itm" type="number" v-model.number="form.itm_bonus_points" min="0" />
       </div>
       <div class="field">
-        <label>% Ranking da noite</label>
-        <input type="number" v-model.number="form.ranking_pct" min="0" max="100" />
+        <label for="cfg-prize-pct">% Premiação da noite</label>
+        <input id="cfg-prize-pct" type="number" v-model.number="form.prize_pct" min="0" max="100" />
+      </div>
+      <div class="field">
+        <label for="cfg-ranking-pct">% Ranking da noite</label>
+        <input id="cfg-ranking-pct" type="number" v-model.number="form.ranking_pct" min="0" max="100" />
       </div>
       <div class="field" style="grid-column: 1 / -1">
-        <label>Jogador que recebe o PIX</label>
-        <select v-model.number="form.pix_receiver_player_id">
+        <label for="cfg-pix-receiver">Jogador que recebe o PIX</label>
+        <select id="cfg-pix-receiver" v-model.number="form.pix_receiver_player_id">
           <option :value="null">— Nenhum —</option>
           <option v-for="p in players" :key="p.id" :value="p.id">
             {{ p.name }}{{ p.pix ? ' — ' + p.pix : ' (sem PIX cadastrado)' }}
@@ -96,6 +100,9 @@ onMounted(async () => {
   const [, { data }] = await Promise.all([fetch(), playersApi.list()])
   players.value = data
   form.value = { ...config.value }
+  if (form.value.rebuy_value == null) {
+    form.value.rebuy_value = form.value.buyin_value ?? 50
+  }
   if (!form.value.pix_receiver_player_id) {
     const marcio = data.find(p => p.name.toLowerCase() === 'marcio ximas')
     if (marcio) form.value.pix_receiver_player_id = marcio.id

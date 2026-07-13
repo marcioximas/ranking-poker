@@ -476,10 +476,18 @@ const form = ref({
 const presencaPts  = computed(() => config.value?.presence_points    ?? 10)
 const pontPts      = computed(() => config.value?.punctuality_points  ?? 15)
 
+function calcEntryValue(entries) {
+  if (!entries || entries <= 0) return 0
+  const buyinValue = config.value?.buyin_value ?? 50
+  const rebuyValue = config.value?.rebuy_value ?? 50
+  return buyinValue + Math.max(entries - 1, 0) * rebuyValue
+}
+
 const totalBuyins = computed(() => roundPlayers.value.reduce((s, p) => s + p.buyin, 0))
 const totalAddons = computed(() => roundPlayers.value.reduce((s, p) => s + p.addon, 0))
+const totalEntriesValue = computed(() => roundPlayers.value.reduce((s, p) => s + calcEntryValue(p.buyin), 0))
 const caixaNoite  = computed(() =>
-  totalBuyins.value * (config.value?.buyin_value ?? 50) +
+  totalEntriesValue.value +
   totalAddons.value * (config.value?.addon_value ?? 50)
 )
 const premiacao = computed(() => caixaNoite.value * 0.85)
@@ -495,12 +503,14 @@ function calcRoundPontos(colocacao) {
 
 // Live preview for the form (includes the player being added if not editing)
 const previewPontos = computed(() => {
-  const buyin_v = config.value?.buyin_value ?? 50
   const addon_v = config.value?.addon_value ?? 50
-  let buyins = totalBuyins.value
+  let totalEntries = totalEntriesValue.value
   let addons = totalAddons.value
-  if (!editingPlayer.value) { buyins += form.value.buyin || 0; addons += form.value.addon || 0 }
-  const prizePool = (buyins * buyin_v + addons * addon_v) * 0.85
+  if (!editingPlayer.value) {
+    totalEntries += calcEntryValue(form.value.buyin || 0)
+    addons += form.value.addon || 0
+  }
+  const prizePool = (totalEntries + addons * addon_v) * 0.85
   if (form.value.colocacao === 1) return Math.floor(prizePool * 0.70 / 10)
   if (form.value.colocacao === 2) return Math.floor(prizePool * 0.30 / 10)
   return 0
@@ -705,7 +715,7 @@ function doFinalize() {
     const snapshot = roundPlayers.value.map(p => ({
       player_name: p.player_name,
       colocacao: p.colocacao,
-      valor: p.buyin * (config.value?.buyin_value || 50) + p.addon * (config.value?.addon_value || 50),
+      valor: calcEntryValue(p.buyin) + p.addon * (config.value?.addon_value || 50),
     }))
 
     finalizing.value = true

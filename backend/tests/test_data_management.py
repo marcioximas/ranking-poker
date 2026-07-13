@@ -53,6 +53,7 @@ class TestDataIntegrity:
     def test_config_defaults_on_fresh_db(self, client):
         config = client.get("/api/config").json()
         assert config["buyin_value"] == pytest.approx(50.0)
+        assert config["rebuy_value"] == pytest.approx(50.0)
         assert config["addon_value"] == pytest.approx(50.0)
         assert config["prize_pct"] == pytest.approx(70.0)
         assert config["ranking_pct"] == pytest.approx(30.0)
@@ -66,9 +67,10 @@ class TestDataIntegrity:
         assert c1["id"] == c2["id"]
 
     def test_config_changes_persist(self, client, auth):
-        client.put("/api/config", json={"buyin_value": 75.0}, headers=auth)
+        client.put("/api/config", json={"buyin_value": 75.0, "rebuy_value": 65.0}, headers=auth)
         config = client.get("/api/config").json()
         assert config["buyin_value"] == pytest.approx(75.0)
+        assert config["rebuy_value"] == pytest.approx(65.0)
 
     def test_expense_rename_to_existing_name_rejected(self, client, auth):
         client.post("/api/expenses", json={"name": "Mesa", "value": 100}, headers=auth)

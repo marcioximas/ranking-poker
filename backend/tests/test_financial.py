@@ -32,7 +32,7 @@ def test_update_financial(client, auth):
 
 def test_financial_caixa_includes_round_buyin(client, auth, player, current_round):
     client.put("/api/config",
-               json={"buyin_value": 100.0, "addon_value": 50.0, "tournament_name": "T",
+               json={"buyin_value": 100.0, "rebuy_value": 80.0, "addon_value": 50.0, "tournament_name": "T",
                      "presence_points": 10, "punctuality_points": 15, "itm_bonus_points": 5,
                      "prize_pct": 70, "ranking_pct": 30}, headers=auth)
     client.post(f"/api/rounds/{current_round['id']}/players",
@@ -42,7 +42,7 @@ def test_financial_caixa_includes_round_buyin(client, auth, player, current_roun
     data = r.json()
     assert data["total_buyins"] == 2
     assert data["total_addons"] == 1
-    assert data["caixa_noite"] == 2 * 100.0 + 1 * 50.0  # 250.0
+    assert data["caixa_noite"] == 100.0 + 80.0 + 1 * 50.0  # 230.0
 
 
 # ── Expenses ────────────────────────────────────────────────────────────────
