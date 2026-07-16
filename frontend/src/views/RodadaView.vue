@@ -174,9 +174,9 @@
       <div class="field">
         <label>Colocação</label>
         <select v-model.number="form.colocacao">
-          <option :value="0" disabled>— Selecione —</option>
+          <option :value="0">— Sem posição —</option>
           <option
-            v-for="pos in roundPlayers.length"
+            v-for="pos in (editingPlayer ? roundPlayers.length : roundPlayers.length + 1)"
             :key="pos"
             :value="pos"
             v-if="!takenPositions.has(pos)"
@@ -688,9 +688,12 @@ function gerarPixCopiaCola(chave, nome, valor) {
 }
 
 function openFinalize() {
-  const sem = roundPlayers.value.filter(p => !p.colocacao)
-  if (sem.length) {
-    toast(`Defina a colocação de: ${sem.map(p => p.player_name).join(', ')}`)
+  if (!player1st.value) {
+    toast('Defina o 1º lugar antes de finalizar.')
+    return
+  }
+  if (!player2nd.value) {
+    toast('Defina o 2º lugar antes de finalizar.')
     return
   }
   showFinalize.value = true
