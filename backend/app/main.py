@@ -62,6 +62,9 @@ def startup():
                 conn.execute(text("ALTER TABLE round_players ADD COLUMN colocacao INTEGER DEFAULT 0"))
 
             cfg_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(config)"))}
+            if "rebuy_value" not in cfg_cols:
+                conn.execute(text("ALTER TABLE config ADD COLUMN rebuy_value FLOAT DEFAULT 50.0"))
+                conn.execute(text("UPDATE config SET rebuy_value = buyin_value WHERE rebuy_value IS NULL"))
             if "pix_receiver_player_id" not in cfg_cols:
                 conn.execute(text("ALTER TABLE config ADD COLUMN pix_receiver_player_id INTEGER"))
             conn.commit()

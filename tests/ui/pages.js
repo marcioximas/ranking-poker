@@ -7,10 +7,10 @@ export class AppPage {
   constructor(page) {
     this.page = page
     this.nav = {
-      rodada:     page.getByRole('button', { name: 'Rodada Atual' }),
-      ranking:    page.getByRole('button', { name: 'Ranking Semestral' }),
-      financeiro: page.getByRole('button', { name: 'Financeiro' }),
-      config:     page.getByRole('button', { name: 'Configurações' }),
+      rodada:     page.getByRole('button', { name: 'Rodada Atual', exact: true }),
+      ranking:    page.getByRole('button', { name: 'Ranking Semestral', exact: true }),
+      financeiro: page.getByRole('button', { name: 'Financeiro', exact: true }),
+      config:     page.getByRole('button', { name: 'Configurações', exact: true }),
     }
   }
 
@@ -30,6 +30,8 @@ export class AuthModal {
   }
 
   async fillAndSubmit(password) {
+    const hasModal = (await this.input.count()) > 0
+    if (!hasModal) return
     await this.input.fill(password)
     await this.submit.click()
   }

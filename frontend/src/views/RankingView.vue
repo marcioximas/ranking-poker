@@ -45,7 +45,10 @@
           <tr>
             <th style="width:44px">#</th>
             <th style="width:130px">Nome</th>
-            <th v-for="r in activeRounds" :key="r.id" style="width:75px;font-size:10px">
+            <th style="width:80px">Buy-ins</th>
+            <th style="width:80px">Rebuys</th>
+            <th style="width:80px">Addons</th>
+            <th v-for="r in orderedActiveRounds" :key="r.id" style="width:75px;font-size:10px">
               {{ r.label.replace(' - ', ' ') }}
             </th>
             <th style="width:80px">Total</th>
@@ -55,8 +58,11 @@
           <tr v-for="(row, i) in rows" :key="row.player_id">
             <td class="medal">{{ medals[i] || i + 1 }}</td>
             <td class="name">{{ row.player_name }}</td>
+            <td class="num">{{ row.total_buyins }}</td>
+            <td :class="row.total_rebuys > 0 ? 'num' : 'zero'">{{ row.total_rebuys }}</td>
+            <td :class="row.total_addons > 0 ? 'num' : 'zero'">{{ row.total_addons }}</td>
             <td
-              v-for="r in activeRounds"
+              v-for="r in orderedActiveRounds"
               :key="r.id"
               :class="[score(row, r.id) > 0 ? 'num' : 'zero', editMode ? 'editable' : '']"
               @click="editMode && openEditScore(row, r)"
@@ -188,6 +194,25 @@ watch(ranking, (val) => {
 const allRounds    = computed(() => ranking.value?.rounds ?? [])
 const activeIds    = computed(() => localActiveIds.value)
 const activeRounds = computed(() => allRounds.value.filter(r => localActiveIds.value.has(r.id)))
+const roundNumberFromLabel = (label) => {
+  const match = String(label ?? '').match(/Rodada\s*(\d+)/i)
+  return match ? parseInt(match[1], 10) : Number.POSITIVE_INFINITY
+}
+
+const orderedActiveRounds = computed(() =>
+  [...activeRounds.value].sort((a, b) => {
+    const aNumber = roundNumberFromLabel(a.label)
+    const bNumber = roundNumberFromLabel(b.label)
+    if (aNumber !== bNumber) return aNumber - bNumber
+    return a.id - b.id
+  }),
+)
+
+const sumByActiveRounds = (roundMap) =>
+  [...localActiveIds.value].reduce(
+    (s, rid) => s + (roundMap?.[String(rid)] ?? roundMap?.[rid] ?? 0),
+    0,
+  )
 
 // Recompute totals locally so filtering is instant without a backend call.
 const rows = computed(() => {
@@ -195,6 +220,9 @@ const rows = computed(() => {
   return base.map(row => ({
     ...row,
     total: [...localActiveIds.value].reduce((s, rid) => s + (row.scores[String(rid)] || 0), 0),
+    total_buyins: sumByActiveRounds(row.buyins),
+    total_rebuys: sumByActiveRounds(row.rebuys),
+    total_addons: sumByActiveRounds(row.addons),
   })).sort((a, b) => b.total - a.total)
 })
 

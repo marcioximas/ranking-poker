@@ -9,6 +9,7 @@ class Config(Base):
     id = Column(Integer, primary_key=True, default=1)
     tournament_name = Column(String, default="Poker Night")
     buyin_value = Column(Float, default=50.0)
+    rebuy_value = Column(Float, default=50.0)
     addon_value = Column(Float, default=50.0)
     presence_points = Column(Integer, default=10)
     punctuality_points = Column(Integer, default=15)

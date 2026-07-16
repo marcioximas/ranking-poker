@@ -20,35 +20,34 @@ test.describe('Navegação principal', () => {
     await expect(page.getByRole('table')).toBeVisible()
   })
 
-  test('Financeiro exige autenticação antes de abrir', async ({ page }) => {
+  test('Financeiro abre sem autenticação inicial', async ({ page }) => {
     const app = new AppPage(page)
     await app.goto()
 
     await app.nav.financeiro.click()
-
-    const auth = new AuthModal(page)
-    await expect(auth.modal).toBeVisible()
+    await expect(app.nav.financeiro).toHaveAttribute('class', /active/)
+    await expect(page.getByText('RESUMO FINANCEIRO')).toBeVisible()
   })
 
-  test('Configurações exige autenticação antes de abrir', async ({ page }) => {
+  test('Configurações abre sem autenticação inicial', async ({ page }) => {
     const app = new AppPage(page)
     await app.goto()
 
     await app.nav.config.click()
-
-    const auth = new AuthModal(page)
-    await expect(auth.modal).toBeVisible()
+    await expect(app.nav.config).toHaveAttribute('class', /active/)
+    await expect(page.getByRole('button', { name: 'Salvar Configurações' })).toBeVisible()
   })
 
-  test('cancelar autenticação mantém a aba anterior', async ({ page }) => {
+  test('cancelar autenticação mantém a aba atual', async ({ page }) => {
     const app = new AppPage(page)
     await app.goto()
 
     await app.nav.financeiro.click()
+    await page.getByRole('button', { name: '+ Adicionar' }).click()
     const auth = new AuthModal(page)
     await auth.cancel.click()
 
-    await expect(app.nav.rodada).toHaveAttribute('class', /active/)
+    await expect(app.nav.financeiro).toHaveAttribute('class', /active/)
   })
 
   test('senha incorreta exibe mensagem de erro', async ({ page }) => {
@@ -56,6 +55,7 @@ test.describe('Navegação principal', () => {
     await app.goto()
 
     await app.nav.financeiro.click()
+    await page.getByRole('button', { name: '+ Adicionar' }).click()
     const auth = new AuthModal(page)
     await auth.fillAndSubmit('senha-errada')
 

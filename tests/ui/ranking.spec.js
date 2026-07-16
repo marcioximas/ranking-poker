@@ -20,6 +20,44 @@ test.describe('Ranking Semestral', () => {
     // Deve ter pelo menos uma linha de dados no ranking (header + dados)
     const rowCount = await ranking.table.getByRole('row').count()
     expect(rowCount).toBeGreaterThanOrEqual(2)
+
+    await expect(ranking.table.getByRole('columnheader', { name: 'Buy-ins' })).toBeVisible()
+    await expect(ranking.table.getByRole('columnheader', { name: 'Rebuys' })).toBeVisible()
+    await expect(ranking.table.getByRole('columnheader', { name: 'Addons' })).toBeVisible()
+  })
+
+  test('ordena colunas de rodada da menor para maior e deixa Total por último', async ({ page }) => {
+    const ranking = new RankingPage(page)
+    const headers = (await ranking.table.locator('thead th').allTextContents())
+      .map((text) => text.trim())
+      .filter(Boolean)
+
+    const totalIndex = headers.lastIndexOf('Total')
+    expect(totalIndex).toBe(headers.length - 1)
+
+    const buyinsIndex = headers.indexOf('Buy-ins')
+    const rebuysIndex = headers.indexOf('Rebuys')
+    const addonsIndex = headers.indexOf('Addons')
+    expect(buyinsIndex).toBeGreaterThan(1)
+    expect(rebuysIndex).toBe(buyinsIndex + 1)
+    expect(addonsIndex).toBe(rebuysIndex + 1)
+
+    const roundNumbers = headers
+      .filter((text) => /^Rodada\s+\d+/i.test(text))
+      .map((text) => {
+        const match = text.match(/Rodada\s+(\d+)/i)
+        return match ? parseInt(match[1], 10) : null
+      })
+      .filter((n) => Number.isFinite(n))
+
+    const firstRoundLabel = headers.find((text) => /^Rodada\s+\d+/i.test(text))
+    if (firstRoundLabel) {
+      const firstRoundIndex = headers.indexOf(firstRoundLabel)
+      expect(firstRoundIndex).toBe(addonsIndex + 1)
+    }
+
+    const sorted = [...roundNumbers].sort((a, b) => a - b)
+    expect(roundNumbers).toEqual(sorted)
   })
 
   test('filtra rodadas localmente clicando nos pills sem precisar de auth', async ({ page }) => {

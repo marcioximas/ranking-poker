@@ -11,6 +11,10 @@ from ..schemas import (
 
 router = APIRouter(tags=["Financeiro"])
 
+RANKING_PCT_FIXED = 0.075
+CAIXA_ANTERIOR_PCT_FIXED = 0.075
+ENTRY_FEE = 10.0
+
 
 def _get_or_create_financial(db: Session) -> Financial:
     fin = db.query(Financial).first()
@@ -24,6 +28,31 @@ def _get_or_create_financial(db: Session) -> Financial:
 
 def _calc_total(rp: RoundPlayer) -> int:
     return (rp.pontos or 0) + (rp.presenca or 0) + (rp.bonus or 0) + (rp.indicacao or 0) + (rp.pontualidade or 0)
+
+
+def _entry_gross(entries: int, config: Config) -> float:
+    if entries <= 0:
+        return 0.0
+    buyin_value = config.buyin_value or 0
+    rebuy_value = getattr(config, "rebuy_value", None)
+    if rebuy_value is None:
+        rebuy_value = buyin_value
+    return buyin_value + max(entries - 1, 0) * rebuy_value
+
+
+def _entry_fee(entries: int) -> float:
+    return max(entries, 0) * ENTRY_FEE
+
+
+def _round_totals(rps: list[RoundPlayer], config: Config) -> tuple[float, float, float]:
+    total_addons = sum(rp.addon for rp in rps)
+    addons_value = total_addons * (config.addon_value or 0)
+
+    gross_entries = sum(_entry_gross(rp.buyin, config) for rp in rps)
+    total_fee = sum(_entry_fee(rp.buyin) for rp in rps)
+    base_without_fee = max(gross_entries - total_fee, 0.0) + addons_value
+    caixa_total = gross_entries + addons_value
+    return caixa_total, base_without_fee, total_fee
 
 
 # ── Financial summary ───────────────────────────────────────────────────────
@@ -42,26 +71,31 @@ def get_financial(db: Session = Depends(get_db)):
     current_round = db.query(Round).filter(Round.is_current == True).first()
     rps: list[RoundPlayer] = current_round.round_players if current_round else []
 
+    historical_rounds = db.query(Round).filter(
+        Round.is_finalized == True,
+        Round.is_current == False,
+    ).all()
+
     total_buyins = sum(rp.buyin for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
-    caixa_noite = total_buyins * config.buyin_value + total_addons * config.addon_value
-    premiacao_total = caixa_noite * (config.prize_pct / 100)
-    ranking_noite = caixa_noite * (config.ranking_pct / 100)
 
-    # Auto-computed: caixa_anterior = total accumulated expenses
+    caixa_noite, base_noite, _ = _round_totals(rps, config)
+    premiacao_total = base_noite * 0.85
+    ranking_noite = base_noite * RANKING_PCT_FIXED
+    caixa_anterior_noite = base_noite * CAIXA_ANTERIOR_PCT_FIXED
+
+    historico_caixa_anterior = 0.0
+    historico_ranking = 0.0
+    for round_ in historical_rounds:
+        _, base_hist, fee_hist = _round_totals(round_.round_players or [], config)
+        historico_caixa_anterior += fee_hist + base_hist * CAIXA_ANTERIOR_PCT_FIXED
+        historico_ranking += base_hist * RANKING_PCT_FIXED
+
     total_despesas = sum(e.value for e in db.query(Expense).all())
-    caixa_anterior = total_despesas
+    caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa_anterior
+    ranking_anterior = (fin.ranking_anterior or 0.0) + historico_ranking
 
-    # Auto-computed: ranking_anterior = sum of ranking contributions from all finalized rounds
-    finalized_rounds = db.query(Round).filter(Round.is_finalized == True).all()
-    ranking_anterior = sum(
-        (sum(rp.buyin for rp in r.round_players) * config.buyin_value +
-         sum(rp.addon for rp in r.round_players) * config.addon_value)
-        * (config.ranking_pct / 100)
-        for r in finalized_rounds
-    )
-
-    caixa_atual = caixa_anterior + caixa_noite
+    caixa_atual = caixa_anterior + caixa_noite + caixa_anterior_noite
     ranking_total = ranking_anterior + ranking_noite
     caixa_com_despesas = caixa_atual - total_despesas
 

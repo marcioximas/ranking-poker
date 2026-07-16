@@ -8,6 +8,7 @@ from datetime import date as Date
 class ConfigUpdate(BaseModel):
     tournament_name: str = "Poker Night"
     buyin_value: float = Field(50.0, ge=0)
+    rebuy_value: float = Field(50.0, ge=0)
     addon_value: float = Field(50.0, ge=0)
     presence_points: int = Field(10, ge=0)
     punctuality_points: int = Field(15, ge=0)
@@ -130,6 +131,9 @@ class RankingRow(BaseModel):
     player_id: int
     player_name: str
     scores: Dict[int, int]
+    buyins: Dict[int, int]
+    rebuys: Dict[int, int]
+    addons: Dict[int, int]
     total: int
 
 

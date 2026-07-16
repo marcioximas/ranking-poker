@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
 from ..dependencies import require_admin
-from ..models import Round, Player, SemestralScore
+from ..models import Round, Player, SemestralScore, RoundPlayer
 from ..schemas import (
     RankingResponse, RankingRow, RoundRead,
     SemestralScoreRead, SemestralScoreUpdate,
@@ -23,15 +23,31 @@ def get_ranking(db: Session = Depends(get_db)):
         (s.player_id, s.round_id): s.score
         for s in db.query(SemestralScore).all()
     }
+    round_player_index: dict[tuple, RoundPlayer] = {
+        (rp.player_id, rp.round_id): rp
+        for rp in db.query(RoundPlayer).join(Round, Round.id == RoundPlayer.round_id).filter(Round.is_finalized == True).all()
+    }
 
     rows = []
     for player in players:
         scores = {r.id: score_index.get((player.id, r.id), 0) for r in rounds}
+        buyins = {}
+        rebuys = {}
+        addons = {}
+        for r in rounds:
+            rp = round_player_index.get((player.id, r.id))
+            buyin_count = max((rp.buyin if rp else 0), 0)
+            buyins[r.id] = buyin_count
+            rebuys[r.id] = max(buyin_count - 1, 0)
+            addons[r.id] = max((rp.addon if rp else 0), 0)
         total = sum(scores.get(rid, 0) for rid in active_ids)
         rows.append(RankingRow(
             player_id=player.id,
             player_name=player.name,
             scores=scores,
+            buyins=buyins,
+            rebuys=rebuys,
+            addons=addons,
             total=total,
         ))
 

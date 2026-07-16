@@ -5,7 +5,7 @@
       <StatCard label="CAIXA ATUAL"       :value="brl(summary.caixa_atual)"        variant="gold" />
       <StatCard label="RANKING TOTAL"     :value="brl(summary.ranking_total)"       variant="gold" />
       <StatCard label="PREMIAÇÃO DA NOITE" :value="brl(summary.premiacao_total)"    variant="green" />
-      <StatCard label="CAIXA C/ DESPESAS"
+      <StatCard label="PREMIAÇÃO DA NOITE C/ DESPESAS"
         :value="brl(summary.caixa_com_despesas)"
         :variant="summary.caixa_com_despesas >= 0 ? 'green' : 'red'"
       />
@@ -54,7 +54,7 @@
         <div class="fin-row"><span class="fin-lbl">Caixa anterior</span>          <span class="fin-val">{{ brl(summary.caixa_anterior) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa atual</span>             <span class="fin-val gold">{{ brl(summary.caixa_atual) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Total despesas</span>          <span class="fin-val red">- {{ brl(summary.total_despesas) }}</span></div>
-        <div class="fin-row"><span class="fin-lbl">Caixa c/ despesas</span>
+        <div class="fin-row"><span class="fin-lbl">Premiação da noite c/ despesas</span>
           <span class="fin-val" :class="summary.caixa_com_despesas >= 0 ? 'green' : 'red'">
             {{ summary.caixa_com_despesas < 0 ? '- ' : '' }}{{ brl(summary.caixa_com_despesas) }}
           </span>
