@@ -65,8 +65,11 @@
 
     <!-- Current round active -->
     <template v-else>
-      <div v-if="roundLocked" style="margin-bottom:10px;font-size:12px;color:var(--gold)">
-        🔒 Rodada trancada: apenas <strong>Colocação</strong> e <strong>Bônus ITM</strong> podem ser editados.
+      <div v-if="!roundLocked" style="margin-bottom:10px;font-size:12px;color:var(--text-dim);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px">
+        ℹ️ Para finalizar a rodada: defina as colocações → clique <strong>🔒 Trancar Rodada</strong> → depois <strong>✓ Finalizar</strong>.
+      </div>
+      <div v-else style="margin-bottom:10px;font-size:12px;color:var(--gold);background:var(--surface);border:1px solid var(--gold);border-radius:6px;padding:8px 12px">
+        🔒 Rodada trancada. Clique <strong>✓ Finalizar Rodada</strong> para encerrar.
       </div>
 
       <div v-if="pixCodes.length" style="margin-bottom:14px">
