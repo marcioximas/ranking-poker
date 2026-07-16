@@ -384,7 +384,7 @@
       </div>
       <!-- PIX section -->
       <div v-if="pixCodes.length" style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
-        <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Cobranças via PIX ({{ pixCodes[0]?.receiverName }})</p>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Premiação via PIX</p>
         <div v-for="item in pixCodes" :key="item.player_name" class="fin-row" style="align-items:center;gap:8px">
           <span class="fin-lbl" style="flex:1">{{ item.player_name }}</span>
           <span style="color:var(--gold);font-size:13px;min-width:70px;text-align:right">{{ brl(item.valor) }}</span>
@@ -396,7 +396,7 @@
         </div>
       </div>
       <div v-else-if="finalizeResult" style="margin-top:12px;font-size:12px;color:var(--text-dim)">
-        Cadastre a chave PIX no perfil de Marcio para gerar cobranças automáticas.
+        Cadastre a chave PIX no perfil dos ganhadores para gerar os códigos de premiação.
       </div>
 
       <div class="modal-actions">
@@ -783,60 +783,50 @@ function openFinalize() {
   showFinalize.value = true
 }
 
-function buildPixCodesForAllPlayers() {
-  const receiver = config.value?.pix_receiver_player_id
-    ? allPlayers.value.find(p => p.id === config.value.pix_receiver_player_id)
-    : null
-
-  if (!receiver?.pix) {
-    return {
-      ok: false,
-      message: 'Configure um recebedor com chave PIX na aba Configurações.',
-      codes: [],
-    }
-  }
-
-  const codes = roundPlayers.value
-    .map(p => ({
-      player_name: p.player_name,
-      receiverName: receiver.name,
-      valor: calcEntryValue(p.buyin) + p.addon * (config.value?.addon_value || 50),
-    }))
-    .filter(p => p.valor > 0)
-    .map(p => ({
-      ...p,
-      code: gerarPixCopiaCola(receiver.pix, receiver.name, p.valor),
-      copied: false,
-    }))
-
-  return { ok: true, codes }
-}
-
 function doLockRound() {
   if (!currentRound.value) return
   if (!roundPlayers.value.length) {
     toast('Adicione jogadores antes de trancar a rodada.')
     return
   }
-
-  requireAuth(async () => {
-    const { ok, message, codes } = buildPixCodesForAllPlayers()
-    if (!ok) {
-      toast(message)
-      return
-    }
-    pixCodes.value = codes
+  requireAuth(() => {
     roundLocked.value = true
-    toast('Rodada trancada! PIX gerado para todos os jogadores. ✓')
+    toast('Rodada trancada! ✓')
   })
 }
 
 function doFinalize() {
   requireAuth(async () => {
+    // Snapshot prize data before finalize() clears roundPlayers
+    const p1 = player1st.value
+    const p2 = player2nd.value
+    const prize1 = premiacao.value * 0.70
+    const prize2 = premiacao.value * 0.30
+    const fullP1 = p1 ? allPlayers.value.find(p => p.id === p1.player_id) : null
+    const fullP2 = p2 ? allPlayers.value.find(p => p.id === p2.player_id) : null
+
     finalizing.value = true
     try {
       finalizeResult.value = await finalize()
       roundLocked.value = false
+
+      const codes = []
+      if (fullP1?.pix) codes.push({
+        player_name: `${fullP1.name} 🥇`,
+        receiverName: fullP1.name,
+        valor: prize1,
+        code: gerarPixCopiaCola(fullP1.pix, fullP1.name, prize1),
+        copied: false,
+      })
+      if (fullP2?.pix) codes.push({
+        player_name: `${fullP2.name} 🥈`,
+        receiverName: fullP2.name,
+        valor: prize2,
+        code: gerarPixCopiaCola(fullP2.pix, fullP2.name, prize2),
+        copied: false,
+      })
+      pixCodes.value = codes
+
       toast('Rodada finalizada e salva no ranking! ✓')
     } catch (e) {
       toast(e.response?.data?.detail || 'Erro ao finalizar.')
