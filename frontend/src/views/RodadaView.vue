@@ -780,6 +780,16 @@ function openFinalize() {
     toast('Defina o 2º lugar antes de finalizar.')
     return
   }
+  const fullP1 = allPlayers.value.find(p => p.id === player1st.value.player_id)
+  const fullP2 = allPlayers.value.find(p => p.id === player2nd.value.player_id)
+  if (!fullP1?.pix) {
+    toast(`Cadastre o PIX de ${player1st.value.player_name} antes de finalizar.`)
+    return
+  }
+  if (!fullP2?.pix) {
+    toast(`Cadastre o PIX de ${player2nd.value.player_name} antes de finalizar.`)
+    return
+  }
   showFinalize.value = true
 }
 
