@@ -664,6 +664,15 @@ async function doSavePlayer() {
     return
   }
   if (!form.value.name.trim()) { formError.value = 'Nome é obrigatório.'; return }
+  if (!editingPlayer.value) {
+    const existing = allPlayers.value.find(p => p.name.toLowerCase() === form.value.name.trim().toLowerCase())
+    if (!existing?.pix) {
+      formError.value = existing
+        ? `${existing.name} não tem PIX cadastrado. Cadastre na aba Jogadores antes de adicionar.`
+        : 'Jogador não encontrado. Cadastre-o na aba Jogadores com nome e PIX antes de adicionar.'
+      return
+    }
+  }
   formError.value = ''
   requireAuth(async () => {
     saving.value = true
