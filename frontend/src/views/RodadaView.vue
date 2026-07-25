@@ -719,9 +719,6 @@ async function doSavePlayer() {
         await updatePlayer(editingPlayer.value.player_id, {
           ...payload,
         })
-        if (roundLocked.value) {
-          pixCodes.value = buildPixCodesFromWinners()
-        }
         toast('Jogador atualizado! ✓')
       } else {
         await addPlayer({
@@ -810,9 +807,11 @@ function buildPixCodesFromWinners({
   secondPlacement = player2nd.value,
   firstPlayer = null,
   secondPlayer = null,
+  firstPrize = null,
+  secondPrize = null,
 } = {}) {
-  const prize1 = premiacao.value * 0.70
-  const prize2 = premiacao.value * 0.30
+  const prize1 = firstPrize ?? (premiacao.value * 0.70)
+  const prize2 = secondPrize ?? (premiacao.value * 0.30)
 
   const fullP1 = firstPlayer || (firstPlacement ? allPlayers.value.find(p => p.id === firstPlacement.player_id) : null)
   const fullP2 = secondPlayer || (secondPlacement ? allPlayers.value.find(p => p.id === secondPlacement.player_id) : null)
@@ -833,6 +832,35 @@ function buildPixCodesFromWinners({
       receiverName: fullP2.name,
       valor: prize2,
       code: gerarPixCopiaCola(fullP2.pix, fullP2.name, prize2),
+      copied: false,
+    })
+  }
+  return codes
+}
+
+function buildPixCodesForRoundCharges() {
+  const receiverId = config.value?.pix_receiver_player_id
+  const receiver = receiverId ? allPlayers.value.find(p => p.id === receiverId) : null
+  if (!receiver?.pix) return []
+
+  const buyinValue = config.value?.buyin_value ?? 50
+  const rebuyValue = config.value?.rebuy_value ?? buyinValue
+  const addonValue = config.value?.addon_value ?? 50
+
+  const codes = []
+  for (const rp of roundPlayers.value) {
+    const valor =
+      (Math.max(rp.buyin || 0, 0) * buyinValue) +
+      (Math.max(rp.rebuy || 0, 0) * rebuyValue) +
+      (Math.max(rp.addon || 0, 0) * addonValue)
+
+    if (valor <= 0) continue
+
+    codes.push({
+      player_name: rp.player_name,
+      receiverName: receiver.name,
+      valor,
+      code: gerarPixCopiaCola(receiver.pix, receiver.name, valor),
       copied: false,
     })
   }
@@ -890,8 +918,12 @@ function doToggleRoundLock() {
     }
 
     roundLocked.value = true
-    pixCodes.value = buildPixCodesFromWinners()
-    toast(pixCodes.value.length ? 'Rodada trancada! PIX pronto para copiar. ✓' : 'Rodada trancada! ✓')
+    pixCodes.value = buildPixCodesForRoundCharges()
+    if (!pixCodes.value.length) {
+      toast('Rodada trancada! Configure o recebedor PIX em Configurações para gerar as cobranças.')
+      return
+    }
+    toast('Rodada trancada! PIX de cobrança gerado para todos os jogadores. ✓')
   })
 }
 
@@ -900,6 +932,8 @@ function doFinalize() {
     // Snapshot prize data before finalize() clears roundPlayers
     const p1 = player1st.value
     const p2 = player2nd.value
+    const prize1 = premiacao.value * 0.70
+    const prize2 = premiacao.value * 0.30
     const fullP1 = p1 ? allPlayers.value.find(p => p.id === p1.player_id) : null
     const fullP2 = p2 ? allPlayers.value.find(p => p.id === p2.player_id) : null
 
@@ -912,6 +946,8 @@ function doFinalize() {
         secondPlacement: p2,
         firstPlayer: fullP1,
         secondPlayer: fullP2,
+        firstPrize: prize1,
+        secondPrize: prize2,
       })
 
       toast('Rodada finalizada e salva no ranking! ✓')

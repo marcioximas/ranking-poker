@@ -14,6 +14,32 @@ async function deleteCurrentRound(apiContext) {
   })
 }
 
+async function ensurePlayer(apiContext, name, pix) {
+  const listRes = await apiContext.get(`${API}/players`)
+  const players = await listRes.json()
+  const existing = players.find((p) => p.name === name)
+  if (existing) {
+    await apiContext.put(`${API}/players/${existing.id}`, {
+      data: { name, pix },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+    return existing.id
+  }
+
+  const created = await apiContext.post(`${API}/players`, {
+    data: { name, pix },
+    headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+  })
+  return (await created.json()).id
+}
+
+async function openAuthAndSubmit(page) {
+  const authInput = page.locator('#auth-password')
+  if ((await authInput.count()) === 0) return
+  await authInput.fill(ADMIN_PASSWORD)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+}
+
 test.describe('Rodada Atual', () => {
   test.beforeEach(async ({ page }) => {
     const app = new AppPage(page)
@@ -100,6 +126,127 @@ test.describe('Rodada Atual', () => {
 
     // Cleanup: remove a rodada criada pelo teste
     await deleteCurrentRound(api)
+    await api.dispose()
+  })
+
+  test('ao trancar rodada gera PIX de cobrança para todos os jogadores no admin configurado', async ({ page }) => {
+    const api = await request.newContext()
+    await deleteCurrentRound(api)
+
+    const stamp = Date.now()
+    const receiverName = `Admin Pix ${stamp}`
+    const p1Name = `Jogador Cobranca 1 ${stamp}`
+    const p2Name = `Jogador Cobranca 2 ${stamp}`
+
+    const receiverId = await ensurePlayer(api, receiverName, 'admin-chave-pix')
+    const p1Id = await ensurePlayer(api, p1Name, 'pix-jogador-1')
+    const p2Id = await ensurePlayer(api, p2Name, 'pix-jogador-2')
+
+    await api.put(`${API}/config`, {
+      data: {
+        tournament_name: 'Poker Night',
+        buyin_value: 50,
+        rebuy_value: 50,
+        addon_value: 50,
+        presence_points: 10,
+        punctuality_points: 15,
+        itm_bonus_points: 5,
+        prize_pct: 70,
+        ranking_pct: 30,
+        pix_receiver_player_id: receiverId,
+      },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+
+    const roundRes = await api.post(`${API}/rounds/current`, {
+      data: { label: `Rodada PIX Cobranca ${stamp}` },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+    const roundId = (await roundRes.json()).id
+
+    await api.post(`${API}/rounds/${roundId}/players`, {
+      data: { player_id: p1Id, buyin: 1, rebuy: 1, addon: 1 },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+    await api.post(`${API}/rounds/${roundId}/players`, {
+      data: { player_id: p2Id, buyin: 1, rebuy: 0, addon: 0 },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+
+    const app = new AppPage(page)
+    await app.goto()
+
+    await page.getByRole('button', { name: '🔒 Trancar Rodada' }).click()
+    await openAuthAndSubmit(page)
+
+    const chargesHeader = page.getByText(`Cobranças PIX — ${receiverName}`).first()
+    await expect(chargesHeader).toBeVisible()
+    const chargesTable = chargesHeader.locator('xpath=following::table[1]')
+    await expect(chargesTable.locator('tbody tr').filter({ hasText: p1Name }).first()).toContainText('R$ 150,00')
+    await expect(chargesTable.locator('tbody tr').filter({ hasText: p2Name }).first()).toContainText('R$ 50,00')
+
+    await deleteCurrentRound(api)
+    await api.dispose()
+  })
+
+  test('ao finalizar rodada gera PIX de premiação com os ganhadores', async ({ page }) => {
+    const api = await request.newContext()
+    await deleteCurrentRound(api)
+
+    const stamp = Date.now()
+    const receiverId = await ensurePlayer(api, `Admin Prem ${stamp}`, 'admin-prem-pix')
+    const p1Name = `Ganhar 1 ${stamp}`
+    const p2Name = `Ganhar 2 ${stamp}`
+    const p1Id = await ensurePlayer(api, p1Name, 'pix-ganhador-1')
+    const p2Id = await ensurePlayer(api, p2Name, 'pix-ganhador-2')
+
+    await api.put(`${API}/config`, {
+      data: {
+        tournament_name: 'Poker Night',
+        buyin_value: 50,
+        rebuy_value: 50,
+        addon_value: 50,
+        presence_points: 10,
+        punctuality_points: 15,
+        itm_bonus_points: 5,
+        prize_pct: 70,
+        ranking_pct: 30,
+        pix_receiver_player_id: receiverId,
+      },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+
+    const roundRes = await api.post(`${API}/rounds/current`, {
+      data: { label: `Rodada PIX Premiacao ${stamp}` },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+    const roundId = (await roundRes.json()).id
+
+    await api.post(`${API}/rounds/${roundId}/players`, {
+      data: { player_id: p1Id, buyin: 1, rebuy: 0, addon: 0, colocacao: 1 },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+    await api.post(`${API}/rounds/${roundId}/players`, {
+      data: { player_id: p2Id, buyin: 1, rebuy: 0, addon: 0, colocacao: 2 },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+
+    const app = new AppPage(page)
+    await app.goto()
+
+    await page.getByRole('button', { name: '🔒 Trancar Rodada' }).click()
+    await openAuthAndSubmit(page)
+
+    await page.getByRole('button', { name: '✓ Finalizar Rodada' }).click()
+    await expect(page.getByRole('heading', { name: 'Finalizar Rodada' })).toBeVisible()
+
+    await page.getByRole('button', { name: '✓ Confirmar e Salvar' }).click()
+    await expect(page.getByRole('heading', { name: 'Rodada Finalizada!' })).toBeVisible()
+    const prizeTitle = page.getByText('Premiação via PIX').first()
+    await expect(prizeTitle).toBeVisible()
+    await expect(page.locator('.fin-row').filter({ hasText: `${p1Name} 🥇` }).first()).toContainText('R$ 59,50')
+    await expect(page.locator('.fin-row').filter({ hasText: `${p2Name} 🥈` }).first()).toContainText('R$ 25,50')
+
     await api.dispose()
   })
 })
