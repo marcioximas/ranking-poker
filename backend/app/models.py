@@ -52,6 +52,7 @@ class RoundPlayer(Base):
     round_id = Column(Integer, ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False)
     player_id = Column(Integer, ForeignKey("players.id", ondelete="CASCADE"), nullable=False)
     buyin = Column(Integer, default=1)
+    rebuy = Column(Integer, default=0)
     addon = Column(Integer, default=0)
     colocacao = Column(Integer, default=0)
     pontos = Column(Integer, default=0)

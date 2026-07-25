@@ -3,7 +3,7 @@
     <!-- Stats -->
     <div class="stat-grid">
       <StatCard label="JOGADORES"       :value="roundPlayers.length"              variant="white" />
-      <StatCard label="BUY-INS / REBUYS" :value="totalBuyins"                    variant="white" />
+      <StatCard label="ENTRADAS"          :value="totalEntries"                   variant="white" />
       <StatCard label="ADDONS"           :value="totalAddons"                     variant="white" />
       <StatCard label="CAIXA DA NOITE"   :value="brl(caixaNoite)"                 variant="green" />
       <StatCard label="LÍDER"            :value="leader?.player_name || '—'"      variant="small" />
@@ -113,7 +113,7 @@
         <button class="btn btn-primary" @click="openAdd" :disabled="roundLocked">+ Adicionar Jogador</button>
         <button class="btn btn-ghost"   @click="openEdit">✎ Editar</button>
         <button class="btn btn-danger btn-sm" @click="doRemove" :disabled="roundLocked">✕ Remover</button>
-        <button class="btn btn-primary" style="margin-left:auto" @click="doLockRound" :disabled="roundLocked">🔒 Trancar Rodada</button>
+        <button class="btn btn-primary" style="margin-left:auto" @click="doToggleRoundLock">{{ roundLocked ? '🔓 Desbloquear Rodada' : '🔒 Trancar Rodada' }}</button>
         <button class="btn btn-gold" @click="openFinalize" :disabled="!roundLocked">✓ Finalizar Rodada</button>
       </div>
 
@@ -123,7 +123,8 @@
             <tr>
               <th style="width:44px">#</th>
               <th style="width:140px">Nome</th>
-              <th>Buy-in/Rebuy</th>
+              <th>Buy-in</th>
+              <th>Rebuy</th>
               <th>Addon</th>
               <th>Colocação</th>
               <th>Pontos</th>
@@ -144,6 +145,7 @@
               <td class="medal">{{ medals[i] || i + 1 }}</td>
               <td class="name">{{ p.player_name }}</td>
               <td :class="p.buyin ? 'num' : 'zero'">{{ p.buyin }}</td>
+              <td :class="p.rebuy ? 'num' : 'zero'">{{ p.rebuy }}</td>
               <td :class="p.addon ? 'num' : 'zero'">{{ p.addon }}</td>
               <td :class="p.colocacao ? 'num' : 'zero'">{{ p.colocacao === 1 ? '🥇' : p.colocacao === 2 ? '🥈' : p.colocacao === 3 ? '🥉' : p.colocacao >= 4 ? p.colocacao + 'º' : '—' }}</td>
               <td :class="p.calcPontos ? 'num' : 'zero'">{{ p.calcPontos }}</td>
@@ -209,8 +211,12 @@
         </datalist>
       </div>
       <div class="field">
-        <label>Buy-in / Rebuys</label>
-        <input type="number" v-model.number="form.buyin" min="0" :disabled="roundLocked && !!editingPlayer" />
+        <label>Buy-in</label>
+        <input type="number" v-model.number="form.buyin" min="0" max="1" step="1" :disabled="roundLocked && !!editingPlayer" />
+      </div>
+      <div class="field">
+        <label>Rebuy</label>
+        <input type="number" v-model.number="form.rebuy" min="0" step="1" :disabled="roundLocked && !!editingPlayer" />
       </div>
       <div class="field">
         <label>Addons</label>
@@ -271,7 +277,7 @@
       <h2>Importar Rodada via CSV</h2>
       <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">
         Exporte a planilha como <strong>CSV</strong> e selecione o arquivo abaixo.<br>
-        Colunas reconhecidas: <em>Nome / Jogador, Buy in / Rebuy, Addon, Pontos, Presença, Bônus ITM, Indicação, Pontualidade, Colocação.</em>
+        Colunas reconhecidas: <em>Nome / Jogador, Buy in, Rebuy, Addon, Pontos, Presença, Bônus ITM, Indicação, Pontualidade, Colocação.</em>
       </p>
       <div class="form-grid">
         <div class="field full">
@@ -308,7 +314,7 @@
           <thead>
             <tr style="color:var(--text-dim)">
               <th style="text-align:left;padding:4px 8px">Jogador</th>
-              <th>Buy-in</th><th>Addon</th><th>Pts</th>
+              <th>Buy-in</th><th>Rebuy</th><th>Addon</th><th>Pts</th>
               <th>Pres.</th><th>Bônus</th><th>Pont.</th><th>Ind.</th>
             </tr>
           </thead>
@@ -316,6 +322,7 @@
             <tr v-for="p in importPreview.matched" :key="p.player_id" style="border-top:1px solid var(--border)">
               <td style="padding:4px 8px">{{ p.player_name }}</td>
               <td style="text-align:center">{{ p.buyin }}</td>
+              <td style="text-align:center">{{ p.rebuy ?? 0 }}</td>
               <td style="text-align:center">{{ p.addon }}</td>
               <td style="text-align:center">{{ p.pontos }}</td>
               <td style="text-align:center">{{ p.presenca }}</td>
@@ -516,23 +523,25 @@ async function doCreateRound() {
   }
 }
 const form = ref({
-  name: '', buyin: 1, addon: 0, colocacao: 0,
+  name: '', buyin: 1, rebuy: 0, addon: 0, colocacao: 0,
   presenca: 10, bonus: 0, indicacao: 0, pontualidade: 15,
 })
 
 const presencaPts  = computed(() => config.value?.presence_points    ?? 10)
 const pontPts      = computed(() => config.value?.punctuality_points  ?? 15)
 
-function calcEntryValue(entries) {
-  if (!entries || entries <= 0) return 0
+function calcEntryValue(buyinCount, rebuyCount) {
+  if ((!buyinCount || buyinCount <= 0) && (!rebuyCount || rebuyCount <= 0)) return 0
   const buyinValue = config.value?.buyin_value ?? 50
   const rebuyValue = config.value?.rebuy_value ?? 50
-  return buyinValue + Math.max(entries - 1, 0) * rebuyValue
+  return (Math.max(buyinCount || 0, 0) * buyinValue) + (Math.max(rebuyCount || 0, 0) * rebuyValue)
 }
 
 const totalBuyins = computed(() => roundPlayers.value.reduce((s, p) => s + p.buyin, 0))
+const totalRebuys = computed(() => roundPlayers.value.reduce((s, p) => s + (p.rebuy || 0), 0))
 const totalAddons = computed(() => roundPlayers.value.reduce((s, p) => s + p.addon, 0))
-const totalEntriesValue = computed(() => roundPlayers.value.reduce((s, p) => s + calcEntryValue(p.buyin), 0))
+const totalEntries = computed(() => totalBuyins.value + totalRebuys.value)
+const totalEntriesValue = computed(() => roundPlayers.value.reduce((s, p) => s + calcEntryValue(p.buyin, p.rebuy || 0), 0))
 const caixaNoite  = computed(() =>
   totalEntriesValue.value +
   totalAddons.value * (config.value?.addon_value ?? 50)
@@ -554,7 +563,7 @@ const previewPontos = computed(() => {
   let totalEntries = totalEntriesValue.value
   let addons = totalAddons.value
   if (!editingPlayer.value) {
-    totalEntries += calcEntryValue(form.value.buyin || 0)
+    totalEntries += calcEntryValue(form.value.buyin, form.value.rebuy)
     addons += form.value.addon || 0
   }
   const prizePool = (totalEntries + addons * addon_v) * 0.85
@@ -599,7 +608,7 @@ const brl = (v) => {
 
 function resetForm() {
   form.value = {
-    name: '', buyin: 1, addon: 0, colocacao: 0,
+    name: '', buyin: 1, rebuy: 0, addon: 0, colocacao: 0,
     presenca: presencaPts.value, bonus: 0, indicacao: 0,
     pontualidade: pontPts.value,
   }
@@ -623,7 +632,9 @@ function openEdit() {
   editingPlayer.value = p
   form.value = {
     name: p.player_name,
-    buyin: p.buyin, addon: p.addon, colocacao: p.colocacao || 0,
+    buyin: p.buyin,
+    rebuy: p.rebuy || 0,
+    addon: p.addon, colocacao: p.colocacao || 0,
     presenca: p.presenca, bonus: p.bonus, indicacao: p.indicacao,
     pontualidade: p.pontualidade,
   }
@@ -664,6 +675,18 @@ async function doSavePlayer() {
     return
   }
   if (!form.value.name.trim()) { formError.value = 'Nome é obrigatório.'; return }
+  if ((form.value.buyin || 0) > 1 || (form.value.buyin || 0) < 0) {
+    formError.value = 'Buy-in deve ser 0 ou 1.'
+    return
+  }
+  if ((form.value.rebuy || 0) < 0) {
+    formError.value = 'Rebuy não pode ser negativo.'
+    return
+  }
+  if ((form.value.rebuy || 0) > 0 && (form.value.buyin || 0) === 0) {
+    formError.value = 'Defina Buy-in = 1 para registrar rebuys.'
+    return
+  }
   if (!editingPlayer.value) {
     const existing = allPlayers.value.find(p => p.name.toLowerCase() === form.value.name.trim().toLowerCase())
     if (!existing?.pix) {
@@ -685,6 +708,7 @@ async function doSavePlayer() {
             }
           : {
               buyin: form.value.buyin,
+              rebuy: form.value.rebuy,
               addon: form.value.addon,
               colocacao: form.value.colocacao,
               presenca: form.value.presenca,
@@ -695,11 +719,16 @@ async function doSavePlayer() {
         await updatePlayer(editingPlayer.value.player_id, {
           ...payload,
         })
+        if (roundLocked.value) {
+          pixCodes.value = buildPixCodesFromWinners()
+        }
         toast('Jogador atualizado! ✓')
       } else {
         await addPlayer({
           name: form.value.name.trim(),
-          buyin: form.value.buyin, addon: form.value.addon,
+          buyin: form.value.buyin,
+          rebuy: form.value.rebuy,
+          addon: form.value.addon,
           colocacao: form.value.colocacao,
           presenca: form.value.presenca,
           bonus: form.value.bonus, indicacao: form.value.indicacao,
@@ -776,6 +805,40 @@ function gerarPixCopiaCola(chave, nome, valor) {
   return p + crc.toString(16).toUpperCase().padStart(4, '0')
 }
 
+function buildPixCodesFromWinners({
+  firstPlacement = player1st.value,
+  secondPlacement = player2nd.value,
+  firstPlayer = null,
+  secondPlayer = null,
+} = {}) {
+  const prize1 = premiacao.value * 0.70
+  const prize2 = premiacao.value * 0.30
+
+  const fullP1 = firstPlayer || (firstPlacement ? allPlayers.value.find(p => p.id === firstPlacement.player_id) : null)
+  const fullP2 = secondPlayer || (secondPlacement ? allPlayers.value.find(p => p.id === secondPlacement.player_id) : null)
+
+  const codes = []
+  if (fullP1?.pix) {
+    codes.push({
+      player_name: `${fullP1.name} 🥇`,
+      receiverName: fullP1.name,
+      valor: prize1,
+      code: gerarPixCopiaCola(fullP1.pix, fullP1.name, prize1),
+      copied: false,
+    })
+  }
+  if (fullP2?.pix) {
+    codes.push({
+      player_name: `${fullP2.name} 🥈`,
+      receiverName: fullP2.name,
+      valor: prize2,
+      code: gerarPixCopiaCola(fullP2.pix, fullP2.name, prize2),
+      copied: false,
+    })
+  }
+  return codes
+}
+
 function openFinalize() {
   if (!roundLocked.value) {
     toast('Tranque a rodada antes de finalizar.')
@@ -802,15 +865,29 @@ function openFinalize() {
   showFinalize.value = true
 }
 
-function doLockRound() {
+function doToggleRoundLock() {
   if (!currentRound.value) return
-  if (!roundPlayers.value.length) {
+
+  if (!roundLocked.value && !roundPlayers.value.length) {
     toast('Adicione jogadores antes de trancar a rodada.')
     return
   }
+
+  if (roundLocked.value && !confirm('Desbloquear rodada para corrigir os números?')) {
+    return
+  }
+
   requireAuth(() => {
+    if (roundLocked.value) {
+      roundLocked.value = false
+      pixCodes.value = []
+      toast('Rodada desbloqueada para correções. ✓')
+      return
+    }
+
     roundLocked.value = true
-    toast('Rodada trancada! ✓')
+    pixCodes.value = buildPixCodesFromWinners()
+    toast(pixCodes.value.length ? 'Rodada trancada! PIX pronto para copiar. ✓' : 'Rodada trancada! ✓')
   })
 }
 
@@ -819,8 +896,6 @@ function doFinalize() {
     // Snapshot prize data before finalize() clears roundPlayers
     const p1 = player1st.value
     const p2 = player2nd.value
-    const prize1 = premiacao.value * 0.70
-    const prize2 = premiacao.value * 0.30
     const fullP1 = p1 ? allPlayers.value.find(p => p.id === p1.player_id) : null
     const fullP2 = p2 ? allPlayers.value.find(p => p.id === p2.player_id) : null
 
@@ -828,23 +903,12 @@ function doFinalize() {
     try {
       finalizeResult.value = await finalize()
       roundLocked.value = false
-
-      const codes = []
-      if (fullP1?.pix) codes.push({
-        player_name: `${fullP1.name} 🥇`,
-        receiverName: fullP1.name,
-        valor: prize1,
-        code: gerarPixCopiaCola(fullP1.pix, fullP1.name, prize1),
-        copied: false,
+      pixCodes.value = buildPixCodesFromWinners({
+        firstPlacement: p1,
+        secondPlacement: p2,
+        firstPlayer: fullP1,
+        secondPlayer: fullP2,
       })
-      if (fullP2?.pix) codes.push({
-        player_name: `${fullP2.name} 🥈`,
-        receiverName: fullP2.name,
-        valor: prize2,
-        code: gerarPixCopiaCola(fullP2.pix, fullP2.name, prize2),
-        copied: false,
-      })
-      pixCodes.value = codes
 
       toast('Rodada finalizada e salva no ranking! ✓')
     } catch (e) {

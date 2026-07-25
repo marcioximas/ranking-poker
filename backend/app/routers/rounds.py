@@ -15,26 +15,39 @@ router = APIRouter(prefix="/rounds", tags=["Rodadas"])
 ENTRY_FEE = 10.0
 
 
-def _entry_gross(entries: int, config: Config) -> float:
-    if entries <= 0:
+def _normalize_buyin_rebuy(buyin: Optional[int], rebuy: Optional[int]) -> tuple[int, int]:
+    buyin_val = max(int(buyin or 0), 0)
+    if rebuy is None:
+        # Backward compatibility: legacy payload used buyin as total entries.
+        entries = buyin_val
+        if entries <= 0:
+            return 0, 0
+        return 1, max(entries - 1, 0)
+
+    rebuy_val = max(int(rebuy or 0), 0)
+    return (1 if buyin_val > 0 else 0), rebuy_val
+
+
+def _entry_gross(buyins: int, rebuys: int, config: Config) -> float:
+    if buyins <= 0 and rebuys <= 0:
         return 0.0
     buyin_value = config.buyin_value or 0
     rebuy_value = getattr(config, "rebuy_value", None)
     if rebuy_value is None:
         rebuy_value = buyin_value
-    return buyin_value + max(entries - 1, 0) * rebuy_value
+    return buyins * buyin_value + rebuys * rebuy_value
 
 
-def _entry_fee(entries: int) -> float:
-    return max(entries, 0) * ENTRY_FEE
+def _entry_fee(buyins: int, rebuys: int) -> float:
+    return max(buyins + rebuys, 0) * ENTRY_FEE
 
 
 def _calc_prize_points(
     colocacao: int,
     total_buyins: int,
+    total_rebuys: int,
     total_addons: int,
     config: Config,
-    players_with_buyin: Optional[int] = None,
 ) -> int:
     """Convert a placement into ranking points based on the prize pool formula.
 
@@ -46,13 +59,9 @@ def _calc_prize_points(
     if rebuy_value is None:
         rebuy_value = buyin_value
 
-    if players_with_buyin is None:
-        gross_entries = total_buyins * buyin_value
-    else:
-        rebuys = max(total_buyins - players_with_buyin, 0)
-        gross_entries = players_with_buyin * buyin_value + rebuys * rebuy_value
+    gross_entries = total_buyins * buyin_value + total_rebuys * rebuy_value
 
-    base_entries = max(gross_entries - _entry_fee(total_buyins), 0.0)
+    base_entries = max(gross_entries - _entry_fee(total_buyins, total_rebuys), 0.0)
 
     arrecadado = base_entries + total_addons * (config.addon_value or 0)
     prize_pool = arrecadado * 0.85
@@ -76,6 +85,7 @@ def _to_read(rp: RoundPlayer) -> RoundPlayerRead:
         player_id=rp.player_id,
         player_name=rp.player.name,
         buyin=rp.buyin,
+        rebuy=rp.rebuy or 0,
         addon=rp.addon,
         colocacao=rp.colocacao or 0,
         pontos=rp.pontos,
@@ -191,7 +201,11 @@ def add_round_player(round_id: int, data: RoundPlayerCreate, db: Session = Depen
         raise HTTPException(404, "Jogador não encontrado.")
     if db.query(RoundPlayer).filter(RoundPlayer.round_id == round_id, RoundPlayer.player_id == data.player_id).first():
         raise HTTPException(409, "Jogador já está nesta rodada.")
-    rp = RoundPlayer(**data.model_dump(), round_id=round_id)
+    payload = data.model_dump()
+    buyin_norm, rebuy_norm = _normalize_buyin_rebuy(payload.get("buyin"), payload.get("rebuy"))
+    payload["buyin"] = buyin_norm
+    payload["rebuy"] = rebuy_norm
+    rp = RoundPlayer(**payload, round_id=round_id)
     db.add(rp)
     db.commit()
     db.refresh(rp)
@@ -205,7 +219,19 @@ def update_round_player(round_id: int, player_id: int, data: RoundPlayerUpdate, 
     rp = db.query(RoundPlayer).filter(RoundPlayer.round_id == round_id, RoundPlayer.player_id == player_id).first()
     if not rp:
         raise HTTPException(404, "Jogador não está nesta rodada.")
-    for field, value in data.model_dump(exclude_none=True).items():
+    updates = data.model_dump(exclude_none=True)
+    if "buyin" in updates or "rebuy" in updates:
+        if "buyin" in updates and "rebuy" not in updates:
+            # Legacy update payload: buyin represented total entries.
+            buyin_norm, rebuy_norm = _normalize_buyin_rebuy(updates.get("buyin"), None)
+        else:
+            buyin_source = updates.get("buyin", rp.buyin)
+            rebuy_source = updates.get("rebuy", rp.rebuy)
+            buyin_norm, rebuy_norm = _normalize_buyin_rebuy(buyin_source, rebuy_source)
+        updates["buyin"] = buyin_norm
+        updates["rebuy"] = rebuy_norm
+
+    for field, value in updates.items():
         setattr(rp, field, value)
     db.commit()
     db.refresh(rp)
@@ -246,10 +272,10 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(config)
     total_buyins = sum(rp.buyin for rp in rps)
+    total_rebuys = sum(rp.rebuy or 0 for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
-    players_with_buyin = sum(1 for rp in rps if (rp.buyin or 0) > 0)
-    total_entries_gross = sum(_entry_gross(rp.buyin, config) for rp in rps)
-    total_entry_fee = sum(_entry_fee(rp.buyin) for rp in rps)
+    total_entries_gross = sum(_entry_gross(rp.buyin or 0, rp.rebuy or 0, config) for rp in rps)
+    total_entry_fee = sum(_entry_fee(rp.buyin or 0, rp.rebuy or 0) for rp in rps)
     total_addons_value = total_addons * (config.addon_value or 0)
     base_noite = max(total_entries_gross - total_entry_fee, 0.0) + total_addons_value
     caixa_noite = total_entries_gross + total_addons_value
@@ -261,9 +287,9 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
         rp.pontos = _calc_prize_points(
             rp.colocacao or 0,
             total_buyins,
+            total_rebuys,
             total_addons,
             config,
-            players_with_buyin=players_with_buyin,
         )
     db.commit()
 
@@ -300,6 +326,7 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
         round_label=round_.label,
         players_count=len(rps),
         total_buyins=total_buyins,
+        total_rebuys=total_rebuys,
         total_addons=total_addons,
         caixa_noite=caixa_noite,
         premiacao_total=premiacao_total,

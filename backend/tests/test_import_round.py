@@ -113,7 +113,7 @@ class TestDryRun:
 
 class TestCreateRound:
     def test_creates_round_and_adds_players(self, client, player):
-        rows = [{"name": player["name"], "pontos": "15", "presenca": "5", "buyin": "2", "addon": "1"}]
+        rows = [{"name": player["name"], "pontos": "15", "presenca": "5", "buyin": "1", "rebuy": "1", "addon": "1"}]
         with patch("app.routers.import_round._parse_pdf", return_value=rows):
             r = upload(client, label="Rodada PDF", dry_run="false")
         assert r.status_code == 200
@@ -130,7 +130,8 @@ class TestCreateRound:
         rps = client.get(f"/api/rounds/{current['id']}/players").json()
         assert rps[0]["pontos"] == 15
         assert rps[0]["presenca"] == 5
-        assert rps[0]["buyin"] == 2
+        assert rps[0]["buyin"] == 1
+        assert rps[0]["rebuy"] == 1
         assert rps[0]["addon"] == 1
 
     def test_auto_generates_label_when_not_provided(self, client, player):
@@ -147,6 +148,7 @@ class TestCreateRound:
         round_id = r.json()["round_id"]
         rps = client.get(f"/api/rounds/{round_id}/players").json()
         assert rps[0]["buyin"] == 1
+        assert rps[0]["rebuy"] == 0
 
     def test_rejects_when_no_players_matched(self, client):
         with patch("app.routers.import_round._parse_pdf", return_value=[{"name": "Ninguém"}]):

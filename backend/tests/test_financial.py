@@ -36,11 +36,12 @@ def test_financial_caixa_includes_round_buyin(client, auth, player, current_roun
                      "presence_points": 10, "punctuality_points": 15, "itm_bonus_points": 5,
                      "prize_pct": 70, "ranking_pct": 30}, headers=auth)
     client.post(f"/api/rounds/{current_round['id']}/players",
-                json={"player_id": player["id"], "buyin": 2, "addon": 1}, headers=auth)
+                json={"player_id": player["id"], "buyin": 1, "rebuy": 1, "addon": 1}, headers=auth)
 
     r = client.get("/api/financial")
     data = r.json()
-    assert data["total_buyins"] == 2
+    assert data["total_buyins"] == 1
+    assert data["total_rebuys"] == 1
     assert data["total_addons"] == 1
     assert data["caixa_noite"] == 100.0 + 80.0 + 1 * 50.0  # 230.0 (taxa fica no caixa)
 
@@ -76,7 +77,7 @@ def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth
 
     client.post(
         f"/api/rounds/{r1['id']}/players",
-        json={"player_id": p1["id"], "buyin": 2, "addon": 1},
+        json={"player_id": p1["id"], "buyin": 1, "rebuy": 1, "addon": 1},
         headers=auth,
     )
     client.post(

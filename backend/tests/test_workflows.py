@@ -80,11 +80,12 @@ class TestFullRoundLifecycle:
         p1, p2 = two_players
         round_id = client.post("/api/rounds/current", json={}, headers=auth).json()["id"]
 
-        client.post(f"/api/rounds/{round_id}/players", json={"player_id": p1["id"], "buyin": 2}, headers=auth)
+        client.post(f"/api/rounds/{round_id}/players", json={"player_id": p1["id"], "buyin": 1, "rebuy": 1}, headers=auth)
         client.post(f"/api/rounds/{round_id}/players", json={"player_id": p2["id"], "buyin": 1, "addon": 1}, headers=auth)
 
         fin = client.get("/api/financial").json()
-        assert fin["total_buyins"] == 3
+        assert fin["total_buyins"] == 2
+        assert fin["total_rebuys"] == 1
         assert fin["total_addons"] == 1
         assert fin["caixa_noite"] == pytest.approx(3 * 50.0 + 1 * 50.0)
 
@@ -93,7 +94,7 @@ class TestFullRoundLifecycle:
         p1, p2 = two_players
         round_id = client.post("/api/rounds/current", json={}, headers=auth).json()["id"]
         for p in [p1, p2]:
-            client.post(f"/api/rounds/{round_id}/players", json={"player_id": p["id"], "buyin": 3}, headers=auth)
+            client.post(f"/api/rounds/{round_id}/players", json={"player_id": p["id"], "buyin": 1, "rebuy": 2}, headers=auth)
         client.post(f"/api/rounds/{round_id}/finalize", headers=auth)
 
         # No current round now

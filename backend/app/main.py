@@ -60,6 +60,10 @@ def startup():
             rp_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(round_players)"))}
             if "colocacao" not in rp_cols:
                 conn.execute(text("ALTER TABLE round_players ADD COLUMN colocacao INTEGER DEFAULT 0"))
+            if "rebuy" not in rp_cols:
+                conn.execute(text("ALTER TABLE round_players ADD COLUMN rebuy INTEGER DEFAULT 0"))
+                conn.execute(text("UPDATE round_players SET rebuy = CASE WHEN COALESCE(buyin, 0) > 1 THEN buyin - 1 ELSE 0 END"))
+                conn.execute(text("UPDATE round_players SET buyin = CASE WHEN COALESCE(buyin, 0) > 0 THEN 1 ELSE 0 END"))
 
             cfg_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(config)"))}
             if "rebuy_value" not in cfg_cols:

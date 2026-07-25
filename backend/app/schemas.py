@@ -79,6 +79,7 @@ class RoundRead(BaseModel):
 class RoundPlayerCreate(BaseModel):
     player_id: int
     buyin: int = Field(1, ge=0)
+    rebuy: Optional[int] = Field(None, ge=0)
     addon: int = Field(0, ge=0)
     colocacao: int = Field(0, ge=0)
     pontos: int = Field(0, ge=0)
@@ -90,6 +91,7 @@ class RoundPlayerCreate(BaseModel):
 
 class RoundPlayerUpdate(BaseModel):
     buyin: Optional[int] = Field(None, ge=0)
+    rebuy: Optional[int] = Field(None, ge=0)
     addon: Optional[int] = Field(None, ge=0)
     colocacao: Optional[int] = Field(None, ge=0)
     pontos: Optional[int] = Field(None, ge=0)
@@ -105,6 +107,7 @@ class RoundPlayerRead(BaseModel):
     player_id: int
     player_name: str
     buyin: int
+    rebuy: int
     addon: int
     colocacao: int
     pontos: int
@@ -166,6 +169,7 @@ class FinancialSummary(BaseModel):
     caixa_anterior: float
     ranking_anterior: float
     total_buyins: int
+    total_rebuys: int
     total_addons: int
     caixa_noite: float
     caixa_atual: float
@@ -224,6 +228,7 @@ class FinalizeResult(BaseModel):
     round_label: str
     players_count: int
     total_buyins: int
+    total_rebuys: int
     total_addons: int
     caixa_noite: float
     premiacao_total: float

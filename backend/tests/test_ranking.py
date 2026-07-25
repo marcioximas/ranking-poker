@@ -42,7 +42,7 @@ def test_ranking_scores_after_finalize(client, auth, current_round, player):
 def test_ranking_shows_buyins_rebuys_addons_per_round(client, auth, current_round, player):
     client.post(
         f"/api/rounds/{current_round['id']}/players",
-        json={"player_id": player["id"], "buyin": 3, "addon": 2, "colocacao": 1},
+        json={"player_id": player["id"], "buyin": 1, "rebuy": 2, "addon": 2, "colocacao": 1},
         headers=auth,
     )
     client.post(f"/api/rounds/{current_round['id']}/finalize", headers=auth)
@@ -51,7 +51,7 @@ def test_ranking_shows_buyins_rebuys_addons_per_round(client, auth, current_roun
     row = next(r for r in ranking["rows"] if r["player_id"] == player["id"])
     rid = str(current_round["id"])
 
-    assert row["buyins"][rid] == 3
+    assert row["buyins"][rid] == 1
     assert row["rebuys"][rid] == 2
     assert row["addons"][rid] == 2
 

@@ -36,9 +36,8 @@ def get_ranking(db: Session = Depends(get_db)):
         addons = {}
         for r in rounds:
             rp = round_player_index.get((player.id, r.id))
-            buyin_count = max((rp.buyin if rp else 0), 0)
-            buyins[r.id] = buyin_count
-            rebuys[r.id] = max(buyin_count - 1, 0)
+            buyins[r.id] = max((rp.buyin if rp else 0), 0)
+            rebuys[r.id] = max((rp.rebuy if rp else 0), 0)
             addons[r.id] = max((rp.addon if rp else 0), 0)
         total = sum(scores.get(rid, 0) for rid in active_ids)
         rows.append(RankingRow(

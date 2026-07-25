@@ -83,12 +83,13 @@ def test_get_nonexistent_round_returns_404(client):
 
 def test_add_player_to_round(client, auth, current_round, player):
     r = client.post(f"/api/rounds/{current_round['id']}/players",
-                    json={"player_id": player["id"], "buyin": 2, "addon": 1},
+                    json={"player_id": player["id"], "buyin": 1, "rebuy": 1, "addon": 1},
                     headers=auth)
     assert r.status_code == 201
     data = r.json()
     assert data["player_id"] == player["id"]
-    assert data["buyin"] == 2
+    assert data["buyin"] == 1
+    assert data["rebuy"] == 1
     assert data["addon"] == 1
 
 

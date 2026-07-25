@@ -27,8 +27,9 @@ _COLUMN_MAP = {
     "indicacao": "indicacao", "ind": "indicacao",
     # buyin
     "compras": "buyin", "buyin": "buyin", "buyins": "buyin",
-    "buy-in": "buyin", "buy-ins": "buyin", "rebuys": "buyin",
-    "buy in / rebuy": "buyin", "buy in": "buyin", "rebuy": "buyin",
+    "buy-in": "buyin", "buy-ins": "buyin", "buy in": "buyin",
+    # rebuy
+    "rebuys": "rebuy", "rebuy": "rebuy", "buy in / rebuy": "entries",
     # addon
     "addon": "addon", "addons": "addon", "add-on": "addon",
     # colocacao
@@ -223,10 +224,34 @@ def _match_players(raw_rows: list[dict], db_players: list[Player]):
         if not player:
             unmatched.append(name)
         else:
+            buyin_raw = row.get("buyin")
+            rebuy_raw = row.get("rebuy")
+            entries_raw = row.get("entries")
+
+            buyin = _to_int(buyin_raw) if buyin_raw is not None else None
+            rebuy = _to_int(rebuy_raw) if rebuy_raw is not None else None
+
+            # Legacy files may provide a combined "entries" count.
+            if entries_raw is not None:
+                entries = _to_int(entries_raw)
+                buyin = 1 if entries > 0 else 0
+                rebuy = max(entries - 1, 0)
+
+            if buyin is None and rebuy is None:
+                buyin, rebuy = 1, 0
+            elif buyin is None:
+                buyin = 1 if (rebuy or 0) > 0 else 0
+            elif rebuy is None:
+                rebuy = 0
+
+            buyin = 1 if buyin > 0 else 0
+            rebuy = max(rebuy, 0)
+
             matched.append({
                 "player_id":    player.id,
                 "player_name":  player.name,
-                "buyin":        _to_int(row.get("buyin")) or 1,
+                "buyin":        buyin,
+                "rebuy":        rebuy,
                 "addon":        _to_int(row.get("addon")),
                 "colocacao":    _to_int(row.get("colocacao")),
                 "pontos":       _to_int(row.get("pontos")),
@@ -272,6 +297,7 @@ def _do_import(matched: list, unmatched: list, dry_run: bool, label: Optional[st
             round_id=round_.id,
             player_id=m["player_id"],
             buyin=m["buyin"],
+            rebuy=m["rebuy"],
             addon=m["addon"],
             colocacao=m["colocacao"],
             pontos=m["pontos"],
@@ -307,7 +333,7 @@ async def import_round_from_csv(
     Importa uma rodada a partir de um arquivo CSV.
 
     **Colunas reconhecidas** (case-insensitive, aceita acentuação):
-    `Nome` / `Jogador`, `Buy in / Rebuy` / `Compras`, `Addon`, `Pontos`,
+    `Nome` / `Jogador`, `Buy in` / `Compras`, `Rebuy`, `Addon`, `Pontos`,
     `Presença`, `Bônus ITM`, `Indicação`, `Pontualidade`, `Colocação`.
     """
     if not (file.filename or "").lower().endswith(".csv"):

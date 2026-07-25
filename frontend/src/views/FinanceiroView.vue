@@ -2,9 +2,12 @@
   <div>
     <!-- Stats -->
     <div class="stat-grid" v-if="summary">
+      <StatCard label="BUY-INS"          :value="summary.total_buyins ?? 0"        variant="white" />
+      <StatCard label="REBUYS"           :value="summary.total_rebuys ?? 0"        variant="white" />
+      <StatCard label="ADDONS"           :value="summary.total_addons ?? 0"        variant="white" />
       <StatCard label="CAIXA ATUAL"       :value="brl(summary.caixa_atual)"        variant="gold" />
-      <StatCard label="RANKING TOTAL"     :value="brl(summary.ranking_total)"       variant="gold" />
-      <StatCard label="PREMIAÇÃO DA NOITE" :value="brl(summary.premiacao_total)"    variant="green" />
+      <StatCard label="PREMIAÇÃO 1º"      :value="brl(summary.premiacao_1)"         variant="green" />
+      <StatCard label="PREMIAÇÃO 2º"      :value="brl(summary.premiacao_2)"         variant="green" />
       <StatCard label="PREMIAÇÃO DA NOITE C/ DESPESAS"
         :value="brl(summary.caixa_com_despesas)"
         :variant="summary.caixa_com_despesas >= 0 ? 'green' : 'red'"
@@ -50,6 +53,9 @@
       <!-- Right: Summary -->
       <div v-if="summary">
         <p class="fin-section-title">RESUMO FINANCEIRO</p>
+        <div class="fin-row"><span class="fin-lbl">Buy-ins da noite</span>     <span class="fin-val">{{ summary.total_buyins ?? 0 }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Rebuys da noite</span>      <span class="fin-val">{{ summary.total_rebuys ?? 0 }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Addons da noite</span>      <span class="fin-val">{{ summary.total_addons ?? 0 }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa da noite</span>         <span class="fin-val green">{{ brl(summary.caixa_noite) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa anterior</span>          <span class="fin-val">{{ brl(summary.caixa_anterior) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa atual</span>             <span class="fin-val gold">{{ brl(summary.caixa_atual) }}</span></div>

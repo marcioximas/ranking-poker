@@ -30,26 +30,26 @@ def _calc_total(rp: RoundPlayer) -> int:
     return (rp.pontos or 0) + (rp.presenca or 0) + (rp.bonus or 0) + (rp.indicacao or 0) + (rp.pontualidade or 0)
 
 
-def _entry_gross(entries: int, config: Config) -> float:
-    if entries <= 0:
+def _entry_gross(buyins: int, rebuys: int, config: Config) -> float:
+    if buyins <= 0 and rebuys <= 0:
         return 0.0
     buyin_value = config.buyin_value or 0
     rebuy_value = getattr(config, "rebuy_value", None)
     if rebuy_value is None:
         rebuy_value = buyin_value
-    return buyin_value + max(entries - 1, 0) * rebuy_value
+    return buyins * buyin_value + rebuys * rebuy_value
 
 
-def _entry_fee(entries: int) -> float:
-    return max(entries, 0) * ENTRY_FEE
+def _entry_fee(buyins: int, rebuys: int) -> float:
+    return max(buyins + rebuys, 0) * ENTRY_FEE
 
 
 def _round_totals(rps: list[RoundPlayer], config: Config) -> tuple[float, float, float]:
     total_addons = sum(rp.addon for rp in rps)
     addons_value = total_addons * (config.addon_value or 0)
 
-    gross_entries = sum(_entry_gross(rp.buyin, config) for rp in rps)
-    total_fee = sum(_entry_fee(rp.buyin) for rp in rps)
+    gross_entries = sum(_entry_gross(rp.buyin or 0, rp.rebuy or 0, config) for rp in rps)
+    total_fee = sum(_entry_fee(rp.buyin or 0, rp.rebuy or 0) for rp in rps)
     base_without_fee = max(gross_entries - total_fee, 0.0) + addons_value
     caixa_total = gross_entries + addons_value
     return caixa_total, base_without_fee, total_fee
@@ -76,7 +76,8 @@ def get_financial(db: Session = Depends(get_db)):
         Round.is_current == False,
     ).all()
 
-    total_buyins = sum(rp.buyin for rp in rps)
+    total_buyins = sum(rp.buyin or 0 for rp in rps)
+    total_rebuys = sum(rp.rebuy or 0 for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
 
     caixa_noite, base_noite, _ = _round_totals(rps, config)
@@ -103,6 +104,7 @@ def get_financial(db: Session = Depends(get_db)):
         caixa_anterior=caixa_anterior,
         ranking_anterior=ranking_anterior,
         total_buyins=total_buyins,
+        total_rebuys=total_rebuys,
         total_addons=total_addons,
         caixa_noite=caixa_noite,
         caixa_atual=caixa_atual,
