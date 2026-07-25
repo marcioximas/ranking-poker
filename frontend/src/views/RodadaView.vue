@@ -114,7 +114,7 @@
         <button class="btn btn-ghost"   @click="openEdit">✎ Editar</button>
         <button class="btn btn-danger btn-sm" @click="doRemove" :disabled="roundLocked">✕ Remover</button>
         <button class="btn btn-primary" style="margin-left:auto" @click="doToggleRoundLock">{{ roundLocked ? '🔓 Desbloquear Rodada' : '🔒 Trancar Rodada' }}</button>
-        <button class="btn btn-gold" @click="openFinalize" :disabled="!roundLocked">✓ Finalizar Rodada</button>
+        <button class="btn btn-gold" @click="openFinalize">✓ Finalizar Rodada</button>
       </div>
 
       <div class="table-wrap">
@@ -840,6 +840,10 @@ function buildPixCodesFromWinners({
 }
 
 function openFinalize() {
+  if (!roundPlayers.value.length) {
+    toast('Adicione jogadores antes de finalizar.')
+    return
+  }
   if (!roundLocked.value) {
     toast('Tranque a rodada antes de finalizar.')
     return
