@@ -22,6 +22,7 @@
               <tr>
                 <th>Jogador</th>
                 <th style="text-align:right">Valor</th>
+                <th style="width:340px">Código PIX (Copia e Cola)</th>
                 <th style="text-align:center;width:120px">Copiar</th>
                 <th style="text-align:center;width:110px">Download</th>
               </tr>
@@ -30,6 +31,15 @@
               <tr v-for="item in pixCodes" :key="item.player_name">
                 <td class="name">{{ item.player_name }}</td>
                 <td style="text-align:right;color:var(--gold);font-weight:500">{{ brl(item.valor) }}</td>
+                <td>
+                  <input
+                    type="text"
+                    :value="item.code"
+                    readonly
+                    @focus="$event.target.select()"
+                    style="width:100%;font-size:11px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text)"
+                  />
+                </td>
                 <td style="text-align:center">
                   <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" @click="copyPixCode(item)">
                     {{ item.copied ? '✓ Copiado' : 'Copiar PIX' }}
@@ -82,6 +92,7 @@
               <tr>
                 <th>Jogador</th>
                 <th style="text-align:right">Valor</th>
+                <th style="width:340px">Código PIX (Copia e Cola)</th>
                 <th style="text-align:center;width:120px">Copiar</th>
                 <th style="text-align:center;width:110px">Download</th>
               </tr>
@@ -90,6 +101,15 @@
               <tr v-for="item in pixCodes" :key="item.player_name">
                 <td class="name">{{ item.player_name }}</td>
                 <td style="text-align:right;color:var(--gold);font-weight:500">{{ brl(item.valor) }}</td>
+                <td>
+                  <input
+                    type="text"
+                    :value="item.code"
+                    readonly
+                    @focus="$event.target.select()"
+                    style="width:100%;font-size:11px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text)"
+                  />
+                </td>
                 <td style="text-align:center">
                   <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" @click="copyPixCode(item)">
                     {{ item.copied ? '✓ Copiado' : 'Copiar PIX' }}
@@ -840,7 +860,12 @@ function buildPixCodesFromWinners({
 
 function buildPixCodesForRoundCharges() {
   const receiverId = config.value?.pix_receiver_player_id
-  const receiver = receiverId ? allPlayers.value.find(p => p.id === receiverId) : null
+  const receiverByConfig = receiverId ? allPlayers.value.find(p => p.id === receiverId) : null
+  const receiverByName = allPlayers.value.find(
+    p => p?.pix && String(p.name || '').trim().toLowerCase() === 'marcio ximas'
+  )
+  const receiverByAnyPix = allPlayers.value.find(p => p?.pix)
+  const receiver = receiverByConfig?.pix ? receiverByConfig : (receiverByName || receiverByAnyPix || null)
   if (!receiver?.pix) return []
 
   const buyinValue = config.value?.buyin_value ?? 50
@@ -849,10 +874,13 @@ function buildPixCodesForRoundCharges() {
 
   const codes = []
   for (const rp of roundPlayers.value) {
+    const buyinCount = Number(rp.buyin || 0)
+    const rebuyCount = Number(rp.rebuy || 0)
+    const addonCount = Number(rp.addon || 0)
     const valor =
-      (Math.max(rp.buyin || 0, 0) * buyinValue) +
-      (Math.max(rp.rebuy || 0, 0) * rebuyValue) +
-      (Math.max(rp.addon || 0, 0) * addonValue)
+      (Math.max(buyinCount, 0) * buyinValue) +
+      (Math.max(rebuyCount, 0) * rebuyValue) +
+      (Math.max(addonCount, 0) * addonValue)
 
     if (valor <= 0) continue
 
@@ -920,7 +948,7 @@ function doToggleRoundLock() {
     roundLocked.value = true
     pixCodes.value = buildPixCodesForRoundCharges()
     if (!pixCodes.value.length) {
-      toast('Rodada trancada! Configure o recebedor PIX em Configurações para gerar as cobranças.')
+      toast('Rodada trancada, mas não foi possível gerar PIX. Verifique recebedor PIX em Configurações e valores de buy-in/rebuy/addon dos jogadores.')
       return
     }
     toast('Rodada trancada! PIX de cobrança gerado para todos os jogadores. ✓')

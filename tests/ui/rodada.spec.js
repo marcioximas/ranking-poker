@@ -182,8 +182,72 @@ test.describe('Rodada Atual', () => {
     const chargesHeader = page.getByText(`Cobranças PIX — ${receiverName}`).first()
     await expect(chargesHeader).toBeVisible()
     const chargesTable = chargesHeader.locator('xpath=following::table[1]')
+    await expect(chargesTable.getByRole('columnheader', { name: 'Código PIX (Copia e Cola)' })).toBeVisible()
     await expect(chargesTable.locator('tbody tr').filter({ hasText: p1Name }).first()).toContainText('R$ 150,00')
     await expect(chargesTable.locator('tbody tr').filter({ hasText: p2Name }).first()).toContainText('R$ 50,00')
+    await expect(chargesTable.locator('tbody tr').filter({ hasText: p1Name }).first().locator('input[readonly]')).toHaveValue(/000201/)
+    await expect(chargesTable.locator('tbody tr').filter({ hasText: p2Name }).first().locator('input[readonly]')).toHaveValue(/000201/)
+
+    await deleteCurrentRound(api)
+    await api.dispose()
+  })
+
+  test('ao trancar rodada gera PIX de cobrança mesmo sem recebedor configurado (fallback)', async ({ page }) => {
+    const api = await request.newContext()
+    await deleteCurrentRound(api)
+
+    const stamp = Date.now()
+    const p1Name = `Fallback Cobranca 1 ${stamp}`
+    const p2Name = `Fallback Cobranca 2 ${stamp}`
+
+    const p1Id = await ensurePlayer(api, p1Name, 'pix-fallback-1')
+    const p2Id = await ensurePlayer(api, p2Name, 'pix-fallback-2')
+
+    await api.put(`${API}/config`, {
+      data: {
+        tournament_name: 'Poker Night',
+        buyin_value: 50,
+        rebuy_value: 50,
+        addon_value: 50,
+        presence_points: 10,
+        punctuality_points: 15,
+        itm_bonus_points: 5,
+        prize_pct: 70,
+        ranking_pct: 30,
+        pix_receiver_player_id: null,
+      },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+
+    const roundRes = await api.post(`${API}/rounds/current`, {
+      data: { label: `Rodada PIX Fallback ${stamp}` },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+    const roundId = (await roundRes.json()).id
+
+    await api.post(`${API}/rounds/${roundId}/players`, {
+      data: { player_id: p1Id, buyin: 1, rebuy: 1, addon: 0 },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+    await api.post(`${API}/rounds/${roundId}/players`, {
+      data: { player_id: p2Id, buyin: 1, rebuy: 0, addon: 1 },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+
+    const app = new AppPage(page)
+    await app.goto()
+
+    await page.getByRole('button', { name: '🔒 Trancar Rodada' }).click()
+    await openAuthAndSubmit(page)
+
+    const chargesHeader = page.locator('p', { hasText: 'Cobranças PIX' }).first()
+    await expect(chargesHeader).toBeVisible()
+    const chargesTable = chargesHeader.locator('xpath=following::table[1]')
+    await expect(chargesTable.getByRole('columnheader', { name: 'Código PIX (Copia e Cola)' })).toBeVisible()
+    await expect(chargesTable.locator('tbody tr').filter({ hasText: p1Name }).first()).toContainText('R$ 100,00')
+    await expect(chargesTable.locator('tbody tr').filter({ hasText: p2Name }).first()).toContainText('R$ 100,00')
+    await expect(chargesTable.locator('tbody tr').filter({ hasText: p1Name }).first().locator('input[readonly]')).toHaveValue(/000201/)
+    await expect(chargesTable.locator('tbody tr').filter({ hasText: p2Name }).first().locator('input[readonly]')).toHaveValue(/000201/)
 
     await deleteCurrentRound(api)
     await api.dispose()
