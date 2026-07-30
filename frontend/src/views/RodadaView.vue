@@ -12,7 +12,7 @@
     <!-- No current round -->
     <template v-if="!currentRound">
       <!-- PIX charges from last round -->
-      <div v-if="pixCodes.length" style="margin-bottom:24px">
+      <div v-if="pixCodes.length && canViewPixCodes" style="margin-bottom:24px">
         <p style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
           Cobranças PIX — {{ pixCodes[0]?.receiverName }}
         </p>
@@ -82,7 +82,7 @@
         🔒 Rodada trancada. Clique <strong>✓ Finalizar Rodada</strong> para encerrar.
       </div>
 
-      <div v-if="pixCodes.length" style="margin-bottom:14px">
+      <div v-if="pixCodes.length && canViewPixCodes" style="margin-bottom:14px">
         <p style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">
           Cobranças PIX — {{ pixCodes[0]?.receiverName }}
         </p>
@@ -446,9 +446,10 @@ import { useAuth } from '../composables/useAuth'
 const { currentRound, roundPlayers, allPlayers, fetchCurrent, fetchAllPlayers, startRound, addPlayer, updatePlayer, removePlayer, finalize } = useRounds()
 const { config, fetch: fetchConfig } = useConfig()
 const { show: toast } = useToast()
-const { requireAuth } = useAuth()
+const { requireAuth, isUnlocked } = useAuth()
 
 const medals = ['🥇', '🥈', '🥉']
+const canViewPixCodes = computed(() => isUnlocked.value)
 
 const selectedId = ref(null)
 const showStartModal  = ref(false)
@@ -805,15 +806,33 @@ async function copyPixCode(item) {
 }
 
 function gerarPixCopiaCola(chave, nome, valor) {
+  function sanitizePixText(value, maxLen, fallback) {
+    const normalized = String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9 $%*+\-./:]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    return (normalized || fallback).substring(0, maxLen)
+  }
+
   function fld(id, value) {
     return `${id}${String(value.length).padStart(2, '0')}${value}`
   }
-  const mai = fld('00', 'br.gov.bcb.pix') + fld('01', chave)
+
+  const pixKey = String(chave || '').trim()
+  const receiverName = sanitizePixText(nome, 25, 'RECEBEDOR')
+  const city = sanitizePixText('SAO PAULO', 15, 'SAO PAULO')
+  const txid = fld('05', '***')
+
+  const mai = fld('00', 'br.gov.bcb.pix') + fld('01', pixKey)
   let p = fld('00', '01') + fld('01', '12') + fld('26', mai) +
           fld('52', '0000') + fld('53', '986') +
           (valor > 0 ? fld('54', valor.toFixed(2)) : '') +
-          fld('58', 'BR') + fld('59', nome.substring(0, 25)) +
-          fld('60', 'SAO PAULO') + '6304'
+          fld('58', 'BR') + fld('59', receiverName) +
+          fld('60', city) + fld('62', txid) + '6304'
   let crc = 0xFFFF
   for (let i = 0; i < p.length; i++) {
     crc ^= p.charCodeAt(i) << 8
