@@ -153,7 +153,7 @@ class ActiveRoundsUpdate(BaseModel):
 # ── Financial ──────────────────────────────────────────────────────────────
 
 class FinancialUpdate(BaseModel):
-    caixa_anterior: float = Field(0.0, ge=0)
+    caixa_anterior: float = Field(0.0)
     ranking_anterior: float = Field(0.0, ge=0)
 
 
