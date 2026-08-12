@@ -69,12 +69,20 @@ def get_financial(db: Session = Depends(get_db)):
         db.refresh(config)
 
     current_round = db.query(Round).filter(Round.is_current == True).first()
-    rps: list[RoundPlayer] = current_round.round_players if current_round else []
 
-    historical_rounds = db.query(Round).filter(
+    all_finalized = db.query(Round).filter(
         Round.is_finalized == True,
         Round.is_current == False,
-    ).all()
+    ).order_by(Round.id).all()
+
+    if current_round:
+        rps: list[RoundPlayer] = current_round.round_players
+        historical_rounds = all_finalized
+    else:
+        # No active round: show last finalized round as "noite", rest as histórico
+        last_round = all_finalized[-1] if all_finalized else None
+        rps = last_round.round_players if last_round else []
+        historical_rounds = all_finalized[:-1] if last_round else []
 
     total_buyins = sum(rp.buyin or 0 for rp in rps)
     total_rebuys = sum(rp.rebuy or 0 for rp in rps)
