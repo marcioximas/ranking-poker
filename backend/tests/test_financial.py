@@ -151,4 +151,8 @@ def test_expenses_affect_financial_summary(client, auth):
 
     data = client.get("/api/financial").json()
     assert data["total_despesas"] == 300.0
-    assert data["caixa_com_despesas"] == 1000.0 - 300.0
+    # Caixa atual (todo o caixa acumulado) desconta as despesas.
+    assert data["caixa_atual"] == 1000.0 - 300.0
+    # Premiação da noite c/despesas é independente do caixa acumulado:
+    # sem rodada nenhuma, a premiação da noite é 0, então fica negativa.
+    assert data["caixa_com_despesas"] == 0.0 - 300.0

@@ -113,7 +113,7 @@ def get_financial(db: Session = Depends(get_db)):
 
     caixa_atual = caixa_anterior + caixa_noite + caixa_anterior_noite - total_despesas
     ranking_total = ranking_anterior + ranking_noite
-    caixa_com_despesas = caixa_atual
+    caixa_com_despesas = premiacao_total - total_despesas
 
     return FinancialSummary(
         caixa_anterior=caixa_anterior,
