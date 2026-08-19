@@ -43,7 +43,8 @@ def test_financial_caixa_includes_round_buyin(client, auth, player, current_roun
     assert data["total_buyins"] == 1
     assert data["total_rebuys"] == 1
     assert data["total_addons"] == 1
-    assert data["caixa_noite"] == 100.0 + 80.0 + 1 * 50.0  # 230.0 (taxa fica no caixa)
+    # 100 (buyin) + 80 (rebuy) + 50 (addon) - 50 (taxa dealer, ronda com < 7 jogadores) = 180.0
+    assert data["caixa_noite"] == 100.0 + 80.0 + 1 * 50.0 - 50.0
 
 
 def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth):
@@ -87,14 +88,22 @@ def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth
     )
 
     data = client.get("/api/financial").json()
-    # Histórico base sem taxa: ((100+80)-20+50) + (100-10) = 300
-    # Caixa anterior histórico: taxa (20+10) + 7.5% de 300 = 52.5
-    assert data["caixa_anterior"] == 52.5
-    # Ranking anterior histórico: 7.5% de 300 = 22.5
-    assert data["ranking_anterior"] == 22.5
-    # Sem rodada atual aberta: totais atuais refletem apenas acumulado anterior.
-    assert data["caixa_atual"] == 52.5
-    assert data["ranking_total"] == 22.5
+    # Sem rodada atual aberta, a última rodada finalizada (Rodada 02) vira "noite"
+    # e só a Rodada 01 entra no histórico acumulado.
+    #
+    # Rodada 01 (histórico): 1 buyin(100) + 1 rebuy(80) = 180 bruto; taxa R$20;
+    # taxa dealer R$50 (rodada com < 7 jogadores); base = (180-20-50) + 50(addon) = 160
+    # caixa anterior histórico: taxa(20) + 7.5% de 160 = 32.0
+    assert data["caixa_anterior"] == 32.0
+    # ranking anterior histórico: 7.5% de 160 = 12.0
+    assert data["ranking_anterior"] == 12.0
+
+    # Rodada 02 (noite): 1 buyin(100) = 100 bruto; taxa R$10; taxa dealer R$50
+    # base = 100 - 10 - 50 = 40; caixa_noite = 100 - 50 = 50
+    # caixa_atual = 32.0 (anterior) + 50 (noite) + 7.5% de 40 (3.0) = 85.0
+    assert data["caixa_atual"] == 85.0
+    # ranking_total = 12.0 (anterior) + 7.5% de 40 (3.0) = 15.0
+    assert data["ranking_total"] == 15.0
 
 
 # ── Expenses ────────────────────────────────────────────────────────────────

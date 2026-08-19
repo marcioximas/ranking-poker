@@ -87,20 +87,23 @@ class TestFullRoundLifecycle:
         assert fin["total_buyins"] == 2
         assert fin["total_rebuys"] == 1
         assert fin["total_addons"] == 1
-        assert fin["caixa_noite"] == pytest.approx(3 * 50.0 + 1 * 50.0)
+        # 3 buyin/rebuy (50 cada) + 1 addon (50) - 50 taxa dealer (rodada com < 7 jogadores)
+        assert fin["caixa_noite"] == pytest.approx(3 * 50.0 + 1 * 50.0 - 50.0)
 
-    def test_historical_round_does_not_affect_financial(self, client, auth, two_players):
-        """Finalized rounds don't contribute to current financial summary."""
+    def test_last_finalized_round_becomes_noite_when_no_current_round(self, client, auth, two_players):
+        """With no active round, the last finalized round is shown as 'noite' data."""
         p1, p2 = two_players
         round_id = client.post("/api/rounds/current", json={}, headers=auth).json()["id"]
         for p in [p1, p2]:
             client.post(f"/api/rounds/{round_id}/players", json={"player_id": p["id"], "buyin": 1, "rebuy": 2}, headers=auth)
         client.post(f"/api/rounds/{round_id}/finalize", headers=auth)
 
-        # No current round now
+        # No current round now: the finalized round above is used as "noite".
+        # 2 players x (1 buyin + 2 rebuy) x R$50 = R$300 bruto; taxa de dealer
+        # (rodada com < 7 jogadores) = R$50 → caixa_noite = 300 - 50 = 250.
         fin = client.get("/api/financial").json()
-        assert fin["total_buyins"] == 0
-        assert fin["caixa_noite"] == pytest.approx(0.0)
+        assert fin["total_buyins"] == 2
+        assert fin["caixa_noite"] == pytest.approx(250.0)
 
 
 # ── Cascade deletes ───────────────────────────────────────────────────────────

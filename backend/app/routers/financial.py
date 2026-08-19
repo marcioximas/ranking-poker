@@ -14,6 +14,8 @@ router = APIRouter(tags=["Financeiro"])
 RANKING_PCT_FIXED = 0.075
 CAIXA_ANTERIOR_PCT_FIXED = 0.075
 ENTRY_FEE = 10.0
+DEALER_FEE = 50.0
+DEALER_FEE_MAX_PLAYERS = 7
 
 
 def _get_or_create_financial(db: Session) -> Financial:
@@ -44,15 +46,20 @@ def _entry_fee(buyins: int, rebuys: int) -> float:
     return max(buyins + rebuys, 0) * ENTRY_FEE
 
 
-def _round_totals(rps: list[RoundPlayer], config: Config) -> tuple[float, float, float]:
+def _dealer_fee(num_players: int) -> float:
+    return DEALER_FEE if 0 < num_players < DEALER_FEE_MAX_PLAYERS else 0.0
+
+
+def _round_totals(rps: list[RoundPlayer], config: Config) -> tuple[float, float, float, float]:
     total_addons = sum(rp.addon for rp in rps)
     addons_value = total_addons * (config.addon_value or 0)
 
     gross_entries = sum(_entry_gross(rp.buyin or 0, rp.rebuy or 0, config) for rp in rps)
     total_fee = sum(_entry_fee(rp.buyin or 0, rp.rebuy or 0) for rp in rps)
-    base_without_fee = max(gross_entries - total_fee, 0.0) + addons_value
-    caixa_total = gross_entries + addons_value
-    return caixa_total, base_without_fee, total_fee
+    dealer_fee = _dealer_fee(len(rps))
+    base_without_fee = max(gross_entries - total_fee - dealer_fee, 0.0) + addons_value
+    caixa_total = max(gross_entries + addons_value - dealer_fee, 0.0)
+    return caixa_total, base_without_fee, total_fee, dealer_fee
 
 
 # ── Financial summary ───────────────────────────────────────────────────────
@@ -88,7 +95,7 @@ def get_financial(db: Session = Depends(get_db)):
     total_rebuys = sum(rp.rebuy or 0 for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
 
-    caixa_noite, base_noite, _ = _round_totals(rps, config)
+    caixa_noite, base_noite, _, dealer_fee = _round_totals(rps, config)
     premiacao_total = base_noite * 0.85
     ranking_noite = base_noite * RANKING_PCT_FIXED
     caixa_anterior_noite = base_noite * CAIXA_ANTERIOR_PCT_FIXED
@@ -96,7 +103,7 @@ def get_financial(db: Session = Depends(get_db)):
     historico_caixa_anterior = 0.0
     historico_ranking = 0.0
     for round_ in historical_rounds:
-        _, base_hist, fee_hist = _round_totals(round_.round_players or [], config)
+        _, base_hist, fee_hist, _ = _round_totals(round_.round_players or [], config)
         historico_caixa_anterior += fee_hist + base_hist * CAIXA_ANTERIOR_PCT_FIXED
         historico_ranking += base_hist * RANKING_PCT_FIXED
 
@@ -104,9 +111,9 @@ def get_financial(db: Session = Depends(get_db)):
     caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa_anterior
     ranking_anterior = (fin.ranking_anterior or 0.0) + historico_ranking
 
-    caixa_atual = caixa_anterior + caixa_noite + caixa_anterior_noite
+    caixa_atual = caixa_anterior + caixa_noite + caixa_anterior_noite - total_despesas
     ranking_total = ranking_anterior + ranking_noite
-    caixa_com_despesas = caixa_atual - total_despesas
+    caixa_com_despesas = caixa_atual
 
     return FinancialSummary(
         caixa_anterior=caixa_anterior,
@@ -115,6 +122,7 @@ def get_financial(db: Session = Depends(get_db)):
         total_rebuys=total_rebuys,
         total_addons=total_addons,
         caixa_noite=caixa_noite,
+        dealer_fee=dealer_fee,
         caixa_atual=caixa_atual,
         premiacao_total=premiacao_total,
         premiacao_1=premiacao_total * 0.7,

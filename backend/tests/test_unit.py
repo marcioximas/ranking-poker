@@ -59,19 +59,19 @@ def make_config(buyin_value=50.0, addon_value=50.0):
 
 class TestCalcPrizePoints:
     def test_first_place_basic(self):
-        # 10 buyins * R$50 = R$500 arrecadado
-        # prize_pool = 500 * 0.85 = 425
-        # 1st = 425 * 0.70 = 297.5 → int(297.5) // 10 = 29
-        assert _calc_prize_points(1, 10, 0, make_config()) == 29
+        # 10 buyins * R$50 = R$500 bruto; taxa de entrada 10 * R$10 = R$100
+        # base = 500 - 100 = 400; prize_pool = 400 * 0.85 = 340
+        # 1st = 340 * 0.70 = 238 → int(238) // 10 = 23
+        assert _calc_prize_points(1, 10, 0, 0, make_config()) == 23
 
     def test_second_place_basic(self):
-        # prize_pool = 425, 2nd = 425 * 0.30 = 127.5 → 12
-        assert _calc_prize_points(2, 10, 0, make_config()) == 12
+        # prize_pool = 340, 2nd = 340 * 0.30 = 102 → 10
+        assert _calc_prize_points(2, 10, 0, 0, make_config()) == 10
 
     def test_not_placed_returns_zero(self):
-        assert _calc_prize_points(0, 10, 0, make_config()) == 0
-        assert _calc_prize_points(3, 10, 0, make_config()) == 0
-        assert _calc_prize_points(99, 10, 0, make_config()) == 0
+        assert _calc_prize_points(0, 10, 0, 0, make_config()) == 0
+        assert _calc_prize_points(3, 10, 0, 0, make_config()) == 0
+        assert _calc_prize_points(99, 10, 0, 0, make_config()) == 0
 
     def test_300_reais_prize_gives_30_points(self):
         # int(300) // 10 = 30 — user's stated example
@@ -82,20 +82,20 @@ class TestCalcPrizePoints:
         assert int(1250) // 10 == 125
 
     def test_with_addons(self):
-        # 5 buyins + 3 addons, both R$50
-        # arrecadado = 400, prize_pool = 340
-        # 1st = 340 * 0.70 = 238 → 23
-        assert _calc_prize_points(1, 5, 3, make_config()) == 23
+        # 5 buyins * R$50 = R$250 bruto; taxa 5 * R$10 = R$50; base = 200
+        # + 3 addons * R$50 = R$150 → arrecadado = 350; prize_pool = 297.5
+        # 1st = 297.5 * 0.70 = 208.25 → int(208.25) // 10 = 20
+        assert _calc_prize_points(1, 5, 0, 3, make_config()) == 20
 
     def test_zero_arrecadado_gives_zero_points(self):
-        assert _calc_prize_points(1, 0, 0, make_config()) == 0
+        assert _calc_prize_points(1, 0, 0, 0, make_config()) == 0
 
     def test_first_and_second_sum_equals_85_pct(self):
         config = make_config(buyin_value=50.0, addon_value=50.0)
-        pts1 = _calc_prize_points(1, 10, 0, config)
-        pts2 = _calc_prize_points(2, 10, 0, config)
-        # 29 + 12 = 41; confirm they come from the same prize pool
-        arrecadado = 10 * 50.0
+        pts1 = _calc_prize_points(1, 10, 0, 0, config)
+        pts2 = _calc_prize_points(2, 10, 0, 0, config)
+        # confirm they come from the same prize pool (após taxa de entrada)
+        arrecadado = 10 * 50.0 - 10 * 10.0
         prize_pool = arrecadado * 0.85
         assert pts1 == int(prize_pool * 0.70) // 10
         assert pts2 == int(prize_pool * 0.30) // 10
