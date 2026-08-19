@@ -3,9 +3,10 @@
     <!-- Stats -->
     <div class="stat-grid">
       <StatCard label="RODADAS VISÍVEIS"  :value="`${activeRounds.length} / ${allRounds.length}`" variant="white" />
-      <StatCard label="JOGADORES ATIVOS"  :value="activePlayers"                                  variant="white" />
       <StatCard label="LÍDER SEMESTRAL"   :value="rows[0]?.player_name || '—'"                    variant="small" />
       <StatCard label="PONTUAÇÃO DO LÍDER" :value="rows[0]?.total || 0"                           />
+      <StatCard label="PREMIAÇÃO DO SEMESTRE" :value="brl(financialSummary?.ranking_total)"       variant="gold" />
+      <StatCard label="CAIXA ATUAL"       :value="brl(financialSummary?.caixa_atual)"              variant="gold" />
     </div>
 
     <!-- Round filter pills -->
@@ -161,13 +162,20 @@ import { ref, computed, watch, onMounted } from 'vue'
 import StatCard from '../components/StatCard.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { useRanking } from '../stores/ranking'
+import { useFinancial } from '../stores/financial'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 import { roundsApi } from '../api'
 
 const { ranking, fetch, setActive, updateScore } = useRanking()
+const { summary: financialSummary, fetch: fetchFinancial } = useFinancial()
 const { isUnlocked, requireAuth } = useAuth()
 const { show: toast } = useToast()
+
+const brl = (v) => {
+  const n = Math.abs(v || 0)
+  return (v < 0 ? '- ' : '') + 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
 
 const medals = ['🥇', '🥈', '🥉']
 const editMode = ref(false)
@@ -225,8 +233,6 @@ const rows = computed(() => {
     total_addons: sumByActiveRounds(row.addons),
   })).sort((a, b) => b.total - a.total)
 })
-
-const activePlayers = computed(() => rows.value.filter(r => r.total > 0).length)
 
 const score = (row, roundId) => row.scores[String(roundId)] ?? row.scores[roundId] ?? 0
 
@@ -324,7 +330,10 @@ async function doDeleteRound() {
   }
 }
 
-onMounted(fetch)
+onMounted(() => {
+  fetch()
+  fetchFinancial()
+})
 </script>
 
 <style scoped>
