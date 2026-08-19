@@ -6,7 +6,8 @@
       <StatCard label="ENTRADAS"          :value="totalEntries"                   variant="white" />
       <StatCard label="ADDONS"           :value="totalAddons"                     variant="white" />
       <StatCard label="CAIXA DA NOITE"   :value="brl(caixaNoite)"                 variant="green" />
-      <StatCard label="LÍDER"            :value="leader?.player_name || '—'"      variant="small" />
+      <StatCard label="PREMIAÇÃO 1º"     :value="brl(premiacao * 0.7)"            variant="green" />
+      <StatCard label="PREMIAÇÃO 2º"     :value="brl(premiacao * 0.3)"            variant="green" />
     </div>
 
     <!-- No current round -->
@@ -603,7 +604,6 @@ const sortedPlayers = computed(() =>
     .sort((a, b) => b.calcTotal - a.calcTotal)
 )
 
-const leader    = computed(() => sortedPlayers.value[0] ?? null)
 const player1st = computed(() => roundPlayers.value.find(p => (p.colocacao || 0) === 1) ?? null)
 const player2nd = computed(() => roundPlayers.value.find(p => (p.colocacao || 0) === 2) ?? null)
 
