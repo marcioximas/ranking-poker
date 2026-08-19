@@ -15,7 +15,7 @@ RANKING_PCT_FIXED = 0.075
 CAIXA_ANTERIOR_PCT_FIXED = 0.075
 ENTRY_FEE = 10.0
 DEALER_FEE = 50.0
-DEALER_FEE_MAX_PLAYERS = 7
+DEALER_FEE_MIN_PLAYERS = 7
 
 
 def _get_or_create_financial(db: Session) -> Financial:
@@ -47,7 +47,7 @@ def _entry_fee(buyins: int, rebuys: int) -> float:
 
 
 def _dealer_fee(num_players: int) -> float:
-    return DEALER_FEE if 0 < num_players < DEALER_FEE_MAX_PLAYERS else 0.0
+    return DEALER_FEE if num_players >= DEALER_FEE_MIN_PLAYERS else 0.0
 
 
 def _round_totals(rps: list[RoundPlayer], config: Config) -> tuple[float, float, float, float]:

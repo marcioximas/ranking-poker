@@ -87,8 +87,8 @@ class TestFullRoundLifecycle:
         assert fin["total_buyins"] == 2
         assert fin["total_rebuys"] == 1
         assert fin["total_addons"] == 1
-        # 3 buyin/rebuy (50 cada) + 1 addon (50) - 50 taxa dealer (rodada com < 7 jogadores)
-        assert fin["caixa_noite"] == pytest.approx(3 * 50.0 + 1 * 50.0 - 50.0)
+        # 3 buyin/rebuy (50 cada) + 1 addon (50); só 2 jogadores, sem taxa de dealer (regra é 7+)
+        assert fin["caixa_noite"] == pytest.approx(3 * 50.0 + 1 * 50.0)
 
     def test_last_finalized_round_becomes_noite_when_no_current_round(self, client, auth, two_players):
         """With no active round, the last finalized round is shown as 'noite' data."""
@@ -99,11 +99,11 @@ class TestFullRoundLifecycle:
         client.post(f"/api/rounds/{round_id}/finalize", headers=auth)
 
         # No current round now: the finalized round above is used as "noite".
-        # 2 players x (1 buyin + 2 rebuy) x R$50 = R$300 bruto; taxa de dealer
-        # (rodada com < 7 jogadores) = R$50 → caixa_noite = 300 - 50 = 250.
+        # 2 players x (1 buyin + 2 rebuy) x R$50 = R$300 bruto; sem taxa de dealer
+        # (só 2 jogadores, regra é 7+) → caixa_noite = 300.
         fin = client.get("/api/financial").json()
         assert fin["total_buyins"] == 2
-        assert fin["caixa_noite"] == pytest.approx(250.0)
+        assert fin["caixa_noite"] == pytest.approx(300.0)
 
 
 # ── Cascade deletes ───────────────────────────────────────────────────────────

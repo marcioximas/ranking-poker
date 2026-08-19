@@ -57,7 +57,7 @@
         <div class="fin-row"><span class="fin-lbl">Rebuys da noite</span>      <span class="fin-val">{{ summary.total_rebuys ?? 0 }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Addons da noite</span>      <span class="fin-val">{{ summary.total_addons ?? 0 }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa da noite</span>         <span class="fin-val green">{{ brl(summary.caixa_noite) }}</span></div>
-        <div class="fin-row" v-if="summary.dealer_fee > 0"><span class="fin-lbl">Taxa dealer (rodada &lt; 7 jogadores)</span> <span class="fin-val red">- {{ brl(summary.dealer_fee) }}</span></div>
+        <div class="fin-row" v-if="summary.dealer_fee > 0"><span class="fin-lbl">Taxa dealer (rodada com 7+ jogadores)</span> <span class="fin-val red">- {{ brl(summary.dealer_fee) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa anterior</span>          <span class="fin-val">{{ brl(summary.caixa_anterior) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa atual</span>             <span class="fin-val gold">{{ brl(summary.caixa_atual) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Total despesas</span>          <span class="fin-val red">- {{ brl(summary.total_despesas) }}</span></div>
