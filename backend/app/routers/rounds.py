@@ -13,6 +13,12 @@ from ..schemas import (
 router = APIRouter(prefix="/rounds", tags=["Rodadas"])
 
 ENTRY_FEE = 10.0
+DEALER_FEE = 50.0
+DEALER_FEE_MIN_PLAYERS = 7
+
+
+def _dealer_fee(num_players: int) -> float:
+    return DEALER_FEE if num_players >= DEALER_FEE_MIN_PLAYERS else 0.0
 
 
 def _normalize_buyin_rebuy(buyin: Optional[int], rebuy: Optional[int]) -> tuple[int, int]:
@@ -48,6 +54,7 @@ def _calc_prize_points(
     total_rebuys: int,
     total_addons: int,
     config: Config,
+    num_players: int = 0,
 ) -> int:
     """Convert a placement into ranking points based on the prize pool formula.
 
@@ -61,7 +68,7 @@ def _calc_prize_points(
 
     gross_entries = total_buyins * buyin_value + total_rebuys * rebuy_value
 
-    base_entries = max(gross_entries - _entry_fee(total_buyins, total_rebuys), 0.0)
+    base_entries = max(gross_entries - _entry_fee(total_buyins, total_rebuys) - _dealer_fee(num_players), 0.0)
 
     arrecadado = base_entries + total_addons * (config.addon_value or 0)
     prize_pool = arrecadado * 0.85
@@ -277,8 +284,9 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
     total_entries_gross = sum(_entry_gross(rp.buyin or 0, rp.rebuy or 0, config) for rp in rps)
     total_entry_fee = sum(_entry_fee(rp.buyin or 0, rp.rebuy or 0) for rp in rps)
     total_addons_value = total_addons * (config.addon_value or 0)
-    base_noite = max(total_entries_gross - total_entry_fee, 0.0) + total_addons_value
-    caixa_noite = total_entries_gross + total_addons_value
+    dealer_fee = _dealer_fee(len(rps))
+    base_noite = max(total_entries_gross - total_entry_fee - dealer_fee, 0.0) + total_addons_value
+    caixa_noite = max(total_entries_gross + total_addons_value - dealer_fee, 0.0)
     premiacao_total = base_noite * 0.85
     ranking_noite = base_noite * 0.075
 
@@ -290,6 +298,7 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
             total_rebuys,
             total_addons,
             config,
+            len(rps),
         )
     db.commit()
 
