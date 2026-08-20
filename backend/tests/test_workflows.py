@@ -38,9 +38,9 @@ class TestFullRoundLifecycle:
 
         ranking = client.get("/api/ranking").json()
         p1_row = next(row for row in ranking["rows"] if row["player_id"] == p1["id"])
-        # 2 buyins: (50 - 10) × 2 = R$80; prize_pool = R$68
-        # 1st: int(68 × 0.70) // 10 = 47 // 10 = 4; presença = 5; total = 9
-        assert p1_row["total"] == 9
+        # 2 buyins: 100 - taxa(20) = R$80; prize_pool = R$68
+        # 1st: int(68 × 0.70) // 10 = 47 // 10 = 4; presença = 5; bônus ITM = 5; total = 14
+        assert p1_row["total"] == 14
 
     def test_round_is_not_current_after_finalize(self, client, auth, two_players):
         p1, p2 = two_players
@@ -174,8 +174,8 @@ class TestMultipleRoundsRanking:
 
         ranking = client.get("/api/ranking").json()
         p1_row = next(row for row in ranking["rows"] if row["player_id"] == p1["id"])
-        # Cada rodada: (50 - 10) × 2 = R$80; 1º recebe int(68 * 0.70) // 10 = 4.
-        assert p1_row["total"] == 8
+        # Cada rodada: 100 - taxa(20) = R$80; 1º recebe int(68 * 0.70) // 10 = 4 + 5 (bônus ITM) = 9.
+        assert p1_row["total"] == 18
 
     def test_inactive_round_excluded_from_total(self, client, auth, two_players):
         p1, p2 = two_players
@@ -193,8 +193,8 @@ class TestMultipleRoundsRanking:
 
         ranking = client.get("/api/ranking").json()
         p1_row = next(row for row in ranking["rows"] if row["player_id"] == p1["id"])
-        # Somente uma rodada ativa: 1º lugar rende 4 pontos pela fórmula atual.
-        assert p1_row["total"] == 4
+        # Somente uma rodada ativa: 1º lugar rende 4 pontos + 5 de bônus ITM = 9.
+        assert p1_row["total"] == 9
 
     def test_ranking_sorted_by_total_descending(self, client, auth, two_players):
         p1, p2 = two_players

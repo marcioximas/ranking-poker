@@ -290,7 +290,8 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
     premiacao_total = base_noite * 0.85
     ranking_noite = base_noite * 0.075
 
-    # Calculate pontos from colocacao using the prize pool formula
+    # Calculate pontos from colocacao using the prize pool formula, and award
+    # the ITM bonus automatically to 1st and 2nd place.
     for rp in rps:
         rp.pontos = _calc_prize_points(
             rp.colocacao or 0,
@@ -300,6 +301,7 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
             config,
             len(rps),
         )
+        rp.bonus = (config.itm_bonus_points or 0) if (rp.colocacao or 0) in (1, 2) else 0
     db.commit()
 
     for rp in rps:
