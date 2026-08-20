@@ -91,19 +91,20 @@ def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth
     # Sem rodada atual aberta, a última rodada finalizada (Rodada 02) vira "noite"
     # e só a Rodada 01 entra no histórico acumulado.
     #
-    # Rodada 01 (histórico): 1 buyin(100) + 1 rebuy(80) = 180 bruto; taxa R$20;
-    # sem taxa de dealer (só 1 jogador, regra é 7+); base = (180-20) + 50(addon) = 210
-    # caixa anterior histórico: taxa(20) + 7.5% de 210 = 35.75
-    assert data["caixa_anterior"] == 35.75
-    # ranking anterior histórico: 7.5% de 210 = 15.75
-    assert data["ranking_anterior"] == 15.75
+    # Rodada 01 (histórico): 1 buyin(100) + 1 rebuy(80) = 180 bruto; taxa R$10
+    # (R$10 por jogador que fez buy-in, não por rebuy);
+    # sem taxa de dealer (só 1 jogador, regra é 7+); base = (180-10) + 50(addon) = 220
+    # caixa anterior histórico: taxa(10) + 7.5% de 220 = 26.5
+    assert data["caixa_anterior"] == 26.5
+    # ranking anterior histórico: 7.5% de 220 = 16.5
+    assert data["ranking_anterior"] == 16.5
 
     # Rodada 02 (noite): 1 buyin(100) = 100 bruto; taxa R$10; sem taxa de dealer
     # base = 100 - 10 = 90; caixa_noite = 100
-    # caixa_atual = 35.75 (anterior) + 100 (noite) + 7.5% de 90 (6.75) = 142.5
-    assert data["caixa_atual"] == 142.5
-    # ranking_total = 15.75 (anterior) + 7.5% de 90 (6.75) = 22.5
-    assert data["ranking_total"] == 22.5
+    # caixa_atual = 26.5 (anterior) + 100 (noite) + 7.5% de 90 (6.75) = 133.25
+    assert data["caixa_atual"] == 133.25
+    # ranking_total = 16.5 (anterior) + 7.5% de 90 (6.75) = 23.25
+    assert data["ranking_total"] == 23.25
 
 
 # ── Expenses ────────────────────────────────────────────────────────────────

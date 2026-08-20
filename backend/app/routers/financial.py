@@ -43,7 +43,7 @@ def _entry_gross(buyins: int, rebuys: int, config: Config) -> float:
 
 
 def _entry_fee(buyins: int, rebuys: int) -> float:
-    return max(buyins + rebuys, 0) * ENTRY_FEE
+    return max(buyins, 0) * ENTRY_FEE
 
 
 def _dealer_fee(num_players: int) -> float:
