@@ -101,12 +101,16 @@ def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth
     # base = 100 - 10 = 90
     # contribuição p/ caixa: taxa(10) + 7.5% de 90 (6.75) = 16.75; p/ ranking: 6.75
     #
-    # caixa_anterior = 26.5 + 16.75 = 43.25; ranking_anterior = 16.5 + 6.75 = 23.25
+    # caixa_anterior = 26.5 + 16.75 = 43.25 (fecha e entra na hora, sem duplicidade)
+    # ranking_anterior = 16.5 (só Rodada 01; a 02 fica de fora do "anterior" e
+    # aparece separada em ranking_noite, para anterior + noite = total)
     assert data["caixa_anterior"] == 43.25
-    assert data["ranking_anterior"] == 23.25
+    assert data["ranking_anterior"] == 16.5
 
-    # Sem rodada em aberto, caixa_atual/ranking_total não somam nada extra da "noite".
+    # Sem rodada em aberto, caixa_atual não soma nada extra da "noite", mas o
+    # ranking sempre soma ranking_noite (que nunca está em ranking_anterior).
     assert data["caixa_atual"] == 43.25
+    assert data["ranking_noite"] == 6.75
     assert data["ranking_total"] == 23.25
 
 

@@ -69,13 +69,15 @@ da noite descontando despesas), não faz parte do acumulado de caixa.
 
 ## Regra do Ranking
 
-Mesma lógica do caixa, mas sem despesas e usando o percentual de ranking:
+Mesma lógica do caixa, com uma diferença: o ranking **nunca** soma o valor da
+rodada "da noite" dentro de `ranking_anterior` — ela sempre entra separada em
+`ranking_noite`, para que a soma `anterior + noite` sempre bata com `total`.
 
 ```
 ranking_anterior = Financial.ranking_anterior (valor base editável)
-                 + Σ (todas as rodadas finalizadas: base * 7,5%)
+                 + Σ (rodadas finalizadas, exceto a "da noite": base * 7,5%)
 
-ranking_total    = ranking_anterior + (ranking_noite, só se houver rodada em aberto)
+ranking_total    = ranking_anterior + ranking_noite   (sempre)
 ```
 
 O ranking (pontos, não dinheiro) exibido em `/ranking` é independente disso: soma o
