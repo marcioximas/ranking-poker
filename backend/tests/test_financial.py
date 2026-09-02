@@ -88,9 +88,9 @@ def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth
     )
 
     data = client.get("/api/financial").json()
-    # Sem rodada atual aberta, todas as rodadas finalizadas (01 e 02) já tiveram
-    # seu dinheiro distribuído e entram no acumulado; a Rodada 02 só é exibida
-    # como "noite" para fins informativos (caixa_noite, premiacao_total etc.).
+    # Sem rodada atual aberta, todas as rodadas finalizadas (01 e 02) já entram
+    # no acumulado assim que fecham — a Rodada 02 só é exibida como "noite" para
+    # fins informativos, sem contar de novo (evita duplicidade).
     #
     # Rodada 01: 1 buyin(100) + 1 rebuy(80) = 180 bruto; taxa R$10
     # (R$10 por jogador que fez buy-in, não por rebuy);
@@ -105,7 +105,7 @@ def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth
     assert data["caixa_anterior"] == 43.25
     assert data["ranking_anterior"] == 23.25
 
-    # Sem rodada em aberto, caixa_atual/ranking_total não somam mais nada da "noite".
+    # Sem rodada em aberto, caixa_atual/ranking_total não somam nada extra da "noite".
     assert data["caixa_atual"] == 43.25
     assert data["ranking_total"] == 23.25
 

@@ -84,13 +84,13 @@ def get_financial(db: Session = Depends(get_db)):
 
     if current_round:
         # Rodada em aberto: o pote inteiro ainda está fisicamente na caixa
-        # (premiação e ranking só saem de fato quando a rodada é finalizada).
+        # (só assenta como taxa+7,5% quando a rodada for finalizada).
         rps: list[RoundPlayer] = current_round.round_players
         historical_rounds = all_finalized
         round_in_progress = True
     else:
-        # Nenhuma rodada em aberto: a última finalizada já teve seu dinheiro
-        # distribuído, então só conta para exibição de "noite", não para o caixa.
+        # Nenhuma rodada em aberto: a última finalizada é exibida como "noite"
+        # só para fins informativos, mas já entra no acumulado (evita duplicidade).
         last_round = all_finalized[-1] if all_finalized else None
         rps = last_round.round_players if last_round else []
         historical_rounds = all_finalized
@@ -116,6 +116,8 @@ def get_financial(db: Session = Depends(get_db)):
     caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa_anterior - total_despesas
     ranking_anterior = (fin.ranking_anterior or 0.0) + historico_ranking
 
+    # Rodada fechada já está assentada no acumulado; só soma o pote da "noite"
+    # de novo enquanto a rodada ainda estiver aberta (senão duplica o valor).
     caixa_atual = caixa_anterior + (caixa_noite if round_in_progress else 0.0)
     ranking_total = ranking_anterior + (ranking_noite if round_in_progress else 0.0)
     caixa_com_despesas = premiacao_total - total_despesas
