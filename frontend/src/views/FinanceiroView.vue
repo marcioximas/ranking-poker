@@ -48,6 +48,16 @@
           <span class="fin-val">{{ brl(rkAnt) }}</span>
         </div>
         <p style="font-size:11px;color:var(--text-faint);margin-top:6px">Altere em Configurações.</p>
+
+        <br>
+        <p class="fin-section-title">ARRECADADO PARA O CAIXA POR RODADA</p>
+        <div v-for="r in summary?.rounds_caixa" :key="r.round_id" class="fin-row">
+          <span class="fin-lbl">{{ r.label }}</span>
+          <span class="fin-val">{{ brl(r.caixa_contribution) }}</span>
+        </div>
+        <p v-if="!summary?.rounds_caixa?.length" style="font-size:12px;color:var(--text-faint);padding:8px 0">
+          Nenhuma rodada fechada ainda.
+        </p>
       </div>
 
       <!-- Right: Summary -->

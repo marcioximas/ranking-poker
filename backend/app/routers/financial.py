@@ -6,7 +6,7 @@ from ..dependencies import require_admin
 from ..models import Financial, Expense, Config, Round, RoundPlayer
 from ..schemas import (
     FinancialRead, FinancialUpdate, FinancialSummary,
-    ExpenseRead, ExpenseCreate, ExpenseUpdate,
+    ExpenseRead, ExpenseCreate, ExpenseUpdate, RoundCaixaContribution,
 )
 
 router = APIRouter(tags=["Financeiro"])
@@ -106,10 +106,15 @@ def get_financial(db: Session = Depends(get_db)):
 
     historico_caixa_anterior = 0.0
     historico_ranking = 0.0
+    rounds_caixa: list[RoundCaixaContribution] = []
     for round_ in historical_rounds:
         _, base_hist, fee_hist, _ = _round_totals(round_.round_players or [], config)
-        historico_caixa_anterior += fee_hist + base_hist * CAIXA_ANTERIOR_PCT_FIXED
+        contribution = fee_hist + base_hist * CAIXA_ANTERIOR_PCT_FIXED
+        historico_caixa_anterior += contribution
         historico_ranking += base_hist * RANKING_PCT_FIXED
+        rounds_caixa.append(RoundCaixaContribution(
+            round_id=round_.id, label=round_.label, caixa_contribution=contribution,
+        ))
 
     total_despesas = sum(e.value for e in db.query(Expense).all())
     # As despesas abatem do caixa anterior, não do caixa da rodada.
@@ -138,6 +143,7 @@ def get_financial(db: Session = Depends(get_db)):
         ranking_total=ranking_total,
         total_despesas=total_despesas,
         caixa_com_despesas=caixa_com_despesas,
+        rounds_caixa=rounds_caixa,
     )
 
 

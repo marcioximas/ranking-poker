@@ -165,6 +165,12 @@ class FinancialRead(BaseModel):
         from_attributes = True
 
 
+class RoundCaixaContribution(BaseModel):
+    round_id: int
+    label: str
+    caixa_contribution: float
+
+
 class FinancialSummary(BaseModel):
     caixa_anterior: float
     ranking_anterior: float
@@ -181,6 +187,7 @@ class FinancialSummary(BaseModel):
     ranking_total: float
     total_despesas: float
     caixa_com_despesas: float
+    rounds_caixa: List[RoundCaixaContribution] = []
 
 
 # ── Expenses ───────────────────────────────────────────────────────────────
