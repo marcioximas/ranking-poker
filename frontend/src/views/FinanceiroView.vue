@@ -52,29 +52,32 @@
 
       <!-- Right: Summary -->
       <div v-if="summary">
-        <p class="fin-section-title">RESUMO FINANCEIRO</p>
+        <p class="fin-section-title">RESUMO FINANCEIRO DA RODADA</p>
         <div class="fin-row"><span class="fin-lbl">Buy-ins da noite</span>     <span class="fin-val">{{ summary.total_buyins ?? 0 }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Rebuys da noite</span>      <span class="fin-val">{{ summary.total_rebuys ?? 0 }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Addons da noite</span>      <span class="fin-val">{{ summary.total_addons ?? 0 }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa da noite</span>         <span class="fin-val green">{{ brl(summary.caixa_noite) }}</span></div>
         <div class="fin-row" v-if="summary.dealer_fee > 0"><span class="fin-lbl">Taxa dealer (rodada com 7+ jogadores)</span> <span class="fin-val red">- {{ brl(summary.dealer_fee) }}</span></div>
-        <div class="fin-row"><span class="fin-lbl">Caixa anterior</span>          <span class="fin-val">{{ brl(summary.caixa_anterior) }}</span></div>
-        <div class="fin-row"><span class="fin-lbl">Caixa atual</span>             <span class="fin-val gold">{{ brl(summary.caixa_atual) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Total despesas</span>          <span class="fin-val red">- {{ brl(summary.total_despesas) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Caixa anterior (líquido de despesas)</span> <span class="fin-val">{{ brl(summary.caixa_anterior) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Caixa atual</span>             <span class="fin-val gold">{{ brl(summary.caixa_atual) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Premiação da noite c/ despesas</span>
           <span class="fin-val" :class="summary.caixa_com_despesas >= 0 ? 'green' : 'red'">
             {{ summary.caixa_com_despesas < 0 ? '- ' : '' }}{{ brl(summary.caixa_com_despesas) }}
           </span>
         </div>
         <div class="fin-row"><span class="fin-lbl">Premiação ({{ pct(summary) }})</span><span class="fin-val gold">{{ brl(summary.premiacao_total) }}</span></div>
-        <div class="fin-row"><span class="fin-lbl">Ranking noite</span>           <span class="fin-val">{{ brl(summary.ranking_noite) }}</span></div>
-        <div class="fin-row"><span class="fin-lbl">Ranking anterior</span>        <span class="fin-val">{{ brl(summary.ranking_anterior) }}</span></div>
-        <div class="fin-row"><span class="fin-lbl">Ranking total</span>           <span class="fin-val gold">{{ brl(summary.ranking_total) }}</span></div>
 
         <br>
         <p class="fin-section-title">PREMIAÇÃO DA NOITE</p>
         <div class="fin-row"><span class="fin-lbl">🥇 1º lugar (70%)</span><span class="fin-val gold">{{ brl(summary.premiacao_1) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">🥈 2º lugar (30%)</span><span class="fin-val">{{ brl(summary.premiacao_2) }}</span></div>
+
+        <br>
+        <p class="fin-section-title">RESUMO FINANCEIRO DO RANKING</p>
+        <div class="fin-row"><span class="fin-lbl">Ranking noite</span>           <span class="fin-val">{{ brl(summary.ranking_noite) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Ranking anterior</span>        <span class="fin-val">{{ brl(summary.ranking_anterior) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Ranking total</span>           <span class="fin-val gold">{{ brl(summary.ranking_total) }}</span></div>
       </div>
     </div>
   </div>

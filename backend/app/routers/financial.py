@@ -83,13 +83,18 @@ def get_financial(db: Session = Depends(get_db)):
     ).order_by(Round.id).all()
 
     if current_round:
+        # Rodada em aberto: o pote inteiro ainda está fisicamente na caixa
+        # (premiação e ranking só saem de fato quando a rodada é finalizada).
         rps: list[RoundPlayer] = current_round.round_players
         historical_rounds = all_finalized
+        round_in_progress = True
     else:
-        # No active round: show last finalized round as "noite", rest as histórico
+        # Nenhuma rodada em aberto: a última finalizada já teve seu dinheiro
+        # distribuído, então só conta para exibição de "noite", não para o caixa.
         last_round = all_finalized[-1] if all_finalized else None
         rps = last_round.round_players if last_round else []
-        historical_rounds = all_finalized[:-1] if last_round else []
+        historical_rounds = all_finalized
+        round_in_progress = False
 
     total_buyins = sum(rp.buyin or 0 for rp in rps)
     total_rebuys = sum(rp.rebuy or 0 for rp in rps)
@@ -98,7 +103,6 @@ def get_financial(db: Session = Depends(get_db)):
     caixa_noite, base_noite, _, dealer_fee = _round_totals(rps, config)
     premiacao_total = base_noite * 0.85
     ranking_noite = base_noite * RANKING_PCT_FIXED
-    caixa_anterior_noite = base_noite * CAIXA_ANTERIOR_PCT_FIXED
 
     historico_caixa_anterior = 0.0
     historico_ranking = 0.0
@@ -108,11 +112,12 @@ def get_financial(db: Session = Depends(get_db)):
         historico_ranking += base_hist * RANKING_PCT_FIXED
 
     total_despesas = sum(e.value for e in db.query(Expense).all())
-    caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa_anterior
+    # As despesas abatem do caixa anterior, não do caixa da rodada.
+    caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa_anterior - total_despesas
     ranking_anterior = (fin.ranking_anterior or 0.0) + historico_ranking
 
-    caixa_atual = caixa_anterior + caixa_noite + caixa_anterior_noite - total_despesas
-    ranking_total = ranking_anterior + ranking_noite
+    caixa_atual = caixa_anterior + (caixa_noite if round_in_progress else 0.0)
+    ranking_total = ranking_anterior + (ranking_noite if round_in_progress else 0.0)
     caixa_com_despesas = premiacao_total - total_despesas
 
     return FinancialSummary(

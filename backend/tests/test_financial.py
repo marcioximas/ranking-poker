@@ -88,22 +88,25 @@ def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth
     )
 
     data = client.get("/api/financial").json()
-    # Sem rodada atual aberta, a última rodada finalizada (Rodada 02) vira "noite"
-    # e só a Rodada 01 entra no histórico acumulado.
+    # Sem rodada atual aberta, todas as rodadas finalizadas (01 e 02) já tiveram
+    # seu dinheiro distribuído e entram no acumulado; a Rodada 02 só é exibida
+    # como "noite" para fins informativos (caixa_noite, premiacao_total etc.).
     #
-    # Rodada 01 (histórico): 1 buyin(100) + 1 rebuy(80) = 180 bruto; taxa R$10
+    # Rodada 01: 1 buyin(100) + 1 rebuy(80) = 180 bruto; taxa R$10
     # (R$10 por jogador que fez buy-in, não por rebuy);
     # sem taxa de dealer (só 1 jogador, regra é 7+); base = (180-10) + 50(addon) = 220
-    # caixa anterior histórico: taxa(10) + 7.5% de 220 = 26.5
-    assert data["caixa_anterior"] == 26.5
-    # ranking anterior histórico: 7.5% de 220 = 16.5
-    assert data["ranking_anterior"] == 16.5
+    # contribuição p/ caixa: taxa(10) + 7.5% de 220 = 26.5; p/ ranking: 7.5% de 220 = 16.5
+    #
+    # Rodada 02: 1 buyin(100) = 100 bruto; taxa R$10; sem taxa de dealer
+    # base = 100 - 10 = 90
+    # contribuição p/ caixa: taxa(10) + 7.5% de 90 (6.75) = 16.75; p/ ranking: 6.75
+    #
+    # caixa_anterior = 26.5 + 16.75 = 43.25; ranking_anterior = 16.5 + 6.75 = 23.25
+    assert data["caixa_anterior"] == 43.25
+    assert data["ranking_anterior"] == 23.25
 
-    # Rodada 02 (noite): 1 buyin(100) = 100 bruto; taxa R$10; sem taxa de dealer
-    # base = 100 - 10 = 90; caixa_noite = 100
-    # caixa_atual = 26.5 (anterior) + 100 (noite) + 7.5% de 90 (6.75) = 133.25
-    assert data["caixa_atual"] == 133.25
-    # ranking_total = 16.5 (anterior) + 7.5% de 90 (6.75) = 23.25
+    # Sem rodada em aberto, caixa_atual/ranking_total não somam mais nada da "noite".
+    assert data["caixa_atual"] == 43.25
     assert data["ranking_total"] == 23.25
 
 
@@ -152,8 +155,30 @@ def test_expenses_affect_financial_summary(client, auth):
 
     data = client.get("/api/financial").json()
     assert data["total_despesas"] == 300.0
-    # Caixa atual (todo o caixa acumulado) desconta as despesas.
+    # As despesas abatem diretamente do caixa anterior.
+    assert data["caixa_anterior"] == 1000.0 - 300.0
     assert data["caixa_atual"] == 1000.0 - 300.0
     # Premiação da noite c/despesas é independente do caixa acumulado:
     # sem rodada nenhuma, a premiação da noite é 0, então fica negativa.
     assert data["caixa_com_despesas"] == 0.0 - 300.0
+
+
+def test_financial_round_in_progress_adds_full_pot_to_caixa(client, auth, player, current_round):
+    client.put("/api/financial",
+               json={"caixa_anterior": 0.0, "ranking_anterior": 0.0}, headers=auth)
+    client.put("/api/config",
+               json={"buyin_value": 100.0, "rebuy_value": 80.0, "addon_value": 50.0, "tournament_name": "T",
+                     "presence_points": 10, "punctuality_points": 15, "itm_bonus_points": 5,
+                     "prize_pct": 70, "ranking_pct": 30}, headers=auth)
+    client.post(f"/api/rounds/{current_round['id']}/players",
+                json={"player_id": player["id"], "buyin": 1, "rebuy": 0, "addon": 0}, headers=auth)
+
+    data = client.get("/api/financial").json()
+    # Rodada em aberto (não finalizada): o pote inteiro (100, sem taxa de dealer)
+    # ainda está fisicamente no caixa, então soma integralmente ao caixa_atual.
+    assert data["caixa_noite"] == 100.0
+    assert data["caixa_anterior"] == 0.0
+    assert data["caixa_atual"] == 100.0
+    # base = 100 - 10 (taxa) = 90; ranking_noite (pendente) = 7.5% de 90 = 6.75
+    assert data["ranking_noite"] == 6.75
+    assert data["ranking_total"] == 6.75
