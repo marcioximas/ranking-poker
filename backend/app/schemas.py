@@ -179,6 +179,7 @@ class FinancialSummary(BaseModel):
     total_addons: int
     caixa_noite: float
     dealer_fee: float
+    caixa_total: float
     caixa_atual: float
     premiacao_total: float
     premiacao_1: float

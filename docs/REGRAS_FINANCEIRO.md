@@ -34,7 +34,7 @@ total_fee        = Σ buyin_i * ENTRY_FEE                 (só conta buy-ins)
 dealer_fee       = DEALER_FEE se num_jogadores >= 7, senão 0
 
 base             = max(gross - total_fee - dealer_fee, 0) + addons_value
-caixa_noite      = max(gross + addons_value - dealer_fee, 0)   # pote inteiro, sem taxa fixa
+caixa_noite      = max(total_fee + base * 7,5% - dealer_fee, 0) # arrecadacao do caixa
 
 premiacao_total  = base * 85%
 premiacao_1      = premiacao_total * 70%
@@ -45,23 +45,19 @@ ranking_noite    = base * 7,5%
 ## Regra do Caixa
 
 - **Rodada fechada (finalizada)**: assim que finaliza, contribui para o acumulado
-  `total_fee + base * 7,5%` — imediatamente, mesmo que nenhuma rodada nova tenha
-  começado depois dela. Não importa se ela ainda é a última rodada exibida como
-  "da noite": o valor já está assentado no acumulado.
-- **Rodada em aberto (não finalizada)**: soma o `caixa_noite` **inteiro** por cima do
-  acumulado — o dinheiro ainda está fisicamente na caixa e ainda não tem `total_fee`
-  nem `7,5%` definidos (a rodada pode receber mais buy-ins). Assim que finalizar,
-  passa a valer a regra acima e para de somar o pote inteiro (evita duplicidade).
-- **Despesas**: abatem diretamente do `caixa_anterior` (não do `caixa_noite`). São a
-  soma de todas as linhas da tabela de despesas no momento da consulta — não há
-  histórico/congelamento, editar/remover uma despesa muda o cálculo retroativamente.
+  `total_fee + base * 7,5% - dealer_fee` — imediatamente, mesmo que nenhuma rodada nova tenha
+  começado depois dela.
+- **Rodada em aberto (não finalizada)**: exibe e soma provisoriamente o mesmo valor
+  `total_fee + base * 7,5% - dealer_fee` com os buy-ins registrados até o momento. Quando novos
+  buy-ins entram, o valor é recalculado; ao fechar, entra no acumulado uma única vez.
+- **Despesas**: abatidas uma única vez no `caixa_total`, nunca no `caixa_anterior` nem
+  no `caixa_noite`. São a soma de todas as linhas da tabela no momento da consulta.
 
 ```
 caixa_anterior = Financial.caixa_anterior (valor base editável)
-               + Σ (todas as rodadas finalizadas: total_fee + base * 7,5%)
-               - Σ despesas cadastradas
+               + Σ (rodadas finalizadas anteriores à "noite": total_fee + base * 7,5% - dealer_fee)
 
-caixa_atual    = caixa_anterior + (caixa_noite, só se houver rodada em aberto)
+caixa_total    = caixa_anterior + caixa_noite - Σ despesas cadastradas
 ```
 
 `caixa_com_despesas = premiacao_total - despesas` — indicador à parte (prêmio líquido

@@ -91,12 +91,11 @@ def get_financial(db: Session = Depends(get_db)):
         round_in_progress = True
     else:
         # Nenhuma rodada em aberto: a última finalizada é exibida como "noite"
-        # só para fins informativos, mas já entra no acumulado do caixa (evita
-        # duplicidade). No ranking ela fica de fora do "anterior" e só aparece
-        # somada em "ranking_noite", para anterior + noite = total.
+        # e fica separada do anterior para compor o total sem duplicidade.
+        # O ranking segue a mesma separação entre anterior e noite.
         last_round = all_finalized[-1] if all_finalized else None
         rps = last_round.round_players if last_round else []
-        historical_rounds = all_finalized
+        historical_rounds = all_finalized[:-1] if last_round else []
         ranking_historical_rounds = all_finalized[:-1] if last_round else []
         round_in_progress = False
 
@@ -104,15 +103,16 @@ def get_financial(db: Session = Depends(get_db)):
     total_rebuys = sum(rp.rebuy or 0 for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
 
-    caixa_noite, base_noite, _, dealer_fee = _round_totals(rps, config)
+    _, base_noite, fee_noite, dealer_fee = _round_totals(rps, config)
+    caixa_noite = max(fee_noite + base_noite * CAIXA_ANTERIOR_PCT_FIXED - dealer_fee, 0.0)
     premiacao_total = base_noite * 0.85
     ranking_noite = base_noite * RANKING_PCT_FIXED
 
     historico_caixa_anterior = 0.0
     rounds_caixa: list[RoundCaixaContribution] = []
     for round_ in historical_rounds:
-        _, base_hist, fee_hist, _ = _round_totals(round_.round_players or [], config)
-        contribution = fee_hist + base_hist * CAIXA_ANTERIOR_PCT_FIXED
+        _, base_hist, fee_hist, dealer_hist = _round_totals(round_.round_players or [], config)
+        contribution = max(fee_hist + base_hist * CAIXA_ANTERIOR_PCT_FIXED - dealer_hist, 0.0)
         historico_caixa_anterior += contribution
         rounds_caixa.append(RoundCaixaContribution(
             round_id=round_.id, label=round_.label, caixa_contribution=contribution,
@@ -124,13 +124,12 @@ def get_financial(db: Session = Depends(get_db)):
         historico_ranking += base_hist * RANKING_PCT_FIXED
 
     total_despesas = sum(e.value for e in db.query(Expense).all())
-    # As despesas abatem do caixa anterior, não do caixa da rodada.
-    caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa_anterior - total_despesas
+    caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa_anterior
     ranking_anterior = (fin.ranking_anterior or 0.0) + historico_ranking
 
     # Rodada fechada já está assentada no acumulado; só soma o pote da "noite"
     # de novo enquanto a rodada ainda estiver aberta (senão duplica o valor).
-    caixa_atual = caixa_anterior + (caixa_noite if round_in_progress else 0.0)
+    caixa_total = caixa_anterior + caixa_noite - total_despesas
     # ranking_noite nunca está incluído em ranking_anterior, então soma sempre.
     ranking_total = ranking_anterior + ranking_noite
     caixa_com_despesas = premiacao_total - total_despesas
@@ -143,7 +142,8 @@ def get_financial(db: Session = Depends(get_db)):
         total_addons=total_addons,
         caixa_noite=caixa_noite,
         dealer_fee=dealer_fee,
-        caixa_atual=caixa_atual,
+        caixa_total=caixa_total,
+        caixa_atual=caixa_total,
         premiacao_total=premiacao_total,
         premiacao_1=premiacao_total * 0.7,
         premiacao_2=premiacao_total * 0.3,
