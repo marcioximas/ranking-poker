@@ -43,8 +43,10 @@ def test_financial_caixa_includes_round_buyin(client, auth, player, current_roun
     assert data["total_buyins"] == 1
     assert data["total_rebuys"] == 1
     assert data["total_addons"] == 1
+    assert data["total_arrecadado_bruto"] == 230.0
     # Base = (100 + 80 - 10) + 50 = 220; caixa = taxa de R$10 + 7,5% da base.
     assert data["caixa_noite"] == 10.0 + 220.0 * 0.075
+    assert data["ranking_noite"] == 220.0 * 0.075
 
 
 def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth):
@@ -164,9 +166,8 @@ def test_expenses_affect_financial_summary(client, auth):
     assert data["caixa_anterior"] == 1000.0
     assert data["caixa_total"] == 1000.0 - 300.0
     assert data["caixa_atual"] == 1000.0 - 300.0
-    # Premiação da noite c/despesas é independente do caixa acumulado:
-    # sem rodada nenhuma, a premiação da noite é 0, então fica negativa.
-    assert data["caixa_com_despesas"] == 0.0 - 300.0
+    # Despesas abatam somente do caixa acumulado, nunca da premiação.
+    assert data["premiacao_total"] == 0.0
 
 
 def test_financial_round_in_progress_adds_caixa_contribution(client, auth, player, current_round):

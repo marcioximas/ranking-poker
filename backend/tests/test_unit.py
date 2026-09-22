@@ -167,14 +167,6 @@ class TestFinancialFormulas:
         caixa_atual = 500.0 + 300.0
         assert caixa_atual == pytest.approx(800.0)
 
-    def test_caixa_com_despesas_subtracts(self):
-        caixa_com_despesas = 800.0 - 150.0
-        assert caixa_com_despesas == pytest.approx(650.0)
-
-    def test_caixa_com_despesas_can_be_negative(self):
-        caixa_com_despesas = 100.0 - 200.0
-        assert caixa_com_despesas < 0
-
     def test_ranking_total_adds_anterior(self):
         ranking_total = 100.0 + 30.0
         assert ranking_total == pytest.approx(130.0)

@@ -177,6 +177,7 @@ class FinancialSummary(BaseModel):
     total_buyins: int
     total_rebuys: int
     total_addons: int
+    total_arrecadado_bruto: float
     caixa_noite: float
     dealer_fee: float
     caixa_total: float
@@ -187,7 +188,6 @@ class FinancialSummary(BaseModel):
     ranking_noite: float
     ranking_total: float
     total_despesas: float
-    caixa_com_despesas: float
     rounds_caixa: List[RoundCaixaContribution] = []
 
 

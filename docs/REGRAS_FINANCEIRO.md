@@ -30,10 +30,13 @@ Para uma rodada com jogadores `rps`:
 ```
 gross            = Σ (buyin_i * buyin_value + rebuy_i * rebuy_value)
 addons_value     = Σ addon_i * addon_value
+total_bruto      = gross + addons_value
 total_fee        = Σ buyin_i * ENTRY_FEE                 (só conta buy-ins)
 dealer_fee       = DEALER_FEE se num_jogadores >= 7, senão 0
 
-base             = max(gross - total_fee - dealer_fee, 0) + addons_value
+total_arrecadado = gross + addons_value
+taxa_total       = total_fee + dealer_fee
+base             = max(total_arrecadado - taxa_total, 0)
 caixa_noite      = max(total_fee + base * 7,5% - dealer_fee, 0) # arrecadacao do caixa
 
 premiacao_total  = base * 85%
@@ -41,6 +44,13 @@ premiacao_1      = premiacao_total * 70%
 premiacao_2      = premiacao_total * 30%
 ranking_noite    = base * 7,5%
 ```
+
+No resumo da rodada, os descontos são exibidos como:
+
+- **Caixa**: `R$ 10 por buy-in + 7,5% da base - dealer_fee`.
+- **Ranking**: `7,5% da base`.
+
+O `total_arrecadado_bruto` é `gross + addons_value`, antes desses descontos.
 
 ## Regra do Caixa
 
@@ -50,8 +60,9 @@ ranking_noite    = base * 7,5%
 - **Rodada em aberto (não finalizada)**: exibe e soma provisoriamente o mesmo valor
   `total_fee + base * 7,5% - dealer_fee` com os buy-ins registrados até o momento. Quando novos
   buy-ins entram, o valor é recalculado; ao fechar, entra no acumulado uma única vez.
-- **Despesas**: abatidas uma única vez no `caixa_total`, nunca no `caixa_anterior` nem
-  no `caixa_noite`. São a soma de todas as linhas da tabela no momento da consulta.
+- **Despesas**: abatidas uma única vez no `caixa_total`, nunca na premiação, no
+  `caixa_anterior` nem no `caixa_noite`. São a soma de todas as linhas da tabela no
+  momento da consulta.
 
 ```
 caixa_anterior = Financial.caixa_anterior (valor base editável)
@@ -60,8 +71,7 @@ caixa_anterior = Financial.caixa_anterior (valor base editável)
 caixa_total    = caixa_anterior + caixa_noite - Σ despesas cadastradas
 ```
 
-`caixa_com_despesas = premiacao_total - despesas` — indicador à parte (prêmio líquido
-da noite descontando despesas), não faz parte do acumulado de caixa.
+Despesas não reduzem `premiacao_total`; reduzem somente o caixa acumulado.
 
 ## Regra do Ranking
 

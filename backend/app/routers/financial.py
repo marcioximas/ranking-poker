@@ -57,7 +57,9 @@ def _round_totals(rps: list[RoundPlayer], config: Config) -> tuple[float, float,
     gross_entries = sum(_entry_gross(rp.buyin or 0, rp.rebuy or 0, config) for rp in rps)
     total_fee = sum(_entry_fee(rp.buyin or 0, rp.rebuy or 0) for rp in rps)
     dealer_fee = _dealer_fee(len(rps))
-    base_without_fee = max(gross_entries - total_fee - dealer_fee, 0.0) + addons_value
+    total_arrecadado = gross_entries + addons_value
+    total_tax = total_fee + dealer_fee
+    base_without_fee = max(total_arrecadado - total_tax, 0.0)
     caixa_total = max(gross_entries + addons_value - dealer_fee, 0.0)
     return caixa_total, base_without_fee, total_fee, dealer_fee
 
@@ -102,6 +104,9 @@ def get_financial(db: Session = Depends(get_db)):
     total_buyins = sum(rp.buyin or 0 for rp in rps)
     total_rebuys = sum(rp.rebuy or 0 for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
+    total_arrecadado_bruto = sum(
+        _entry_gross(rp.buyin or 0, rp.rebuy or 0, config) for rp in rps
+    ) + total_addons * (config.addon_value or 0)
 
     _, base_noite, fee_noite, dealer_fee = _round_totals(rps, config)
     caixa_noite = max(fee_noite + base_noite * CAIXA_ANTERIOR_PCT_FIXED - dealer_fee, 0.0)
@@ -132,14 +137,13 @@ def get_financial(db: Session = Depends(get_db)):
     caixa_total = caixa_anterior + caixa_noite - total_despesas
     # ranking_noite nunca está incluído em ranking_anterior, então soma sempre.
     ranking_total = ranking_anterior + ranking_noite
-    caixa_com_despesas = premiacao_total - total_despesas
-
     return FinancialSummary(
         caixa_anterior=caixa_anterior,
         ranking_anterior=ranking_anterior,
         total_buyins=total_buyins,
         total_rebuys=total_rebuys,
         total_addons=total_addons,
+        total_arrecadado_bruto=total_arrecadado_bruto,
         caixa_noite=caixa_noite,
         dealer_fee=dealer_fee,
         caixa_total=caixa_total,
@@ -150,7 +154,6 @@ def get_financial(db: Session = Depends(get_db)):
         ranking_noite=ranking_noite,
         ranking_total=ranking_total,
         total_despesas=total_despesas,
-        caixa_com_despesas=caixa_com_despesas,
         rounds_caixa=rounds_caixa,
     )
 

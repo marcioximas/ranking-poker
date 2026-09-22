@@ -8,9 +8,9 @@
       <StatCard label="CAIXA TOTAL"       :value="brl(summary.caixa_total)"        variant="gold" />
       <StatCard label="PREMIAÇÃO 1º"      :value="brl(summary.premiacao_1)"         variant="green" />
       <StatCard label="PREMIAÇÃO 2º"      :value="brl(summary.premiacao_2)"         variant="green" />
-      <StatCard label="PREMIAÇÃO DA NOITE C/ DESPESAS"
-        :value="brl(summary.caixa_com_despesas)"
-        :variant="summary.caixa_com_despesas >= 0 ? 'green' : 'red'"
+      <StatCard label="CAIXA APÓS DESPESAS"
+        :value="brl(summary.caixa_total)"
+        :variant="summary.caixa_total >= 0 ? 'green' : 'red'"
       />
     </div>
 
@@ -66,20 +66,18 @@
         <div class="fin-row"><span class="fin-lbl">Buy-ins da noite</span>     <span class="fin-val">{{ summary.total_buyins ?? 0 }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Rebuys da noite</span>      <span class="fin-val">{{ summary.total_rebuys ?? 0 }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Addons da noite</span>      <span class="fin-val">{{ summary.total_addons ?? 0 }}</span></div>
-        <div class="fin-row" v-if="summary.dealer_fee > 0"><span class="fin-lbl">Taxa dealer (rodada com 7+ jogadores)</span> <span class="fin-val red">- {{ brl(summary.dealer_fee) }}</span></div>
-        <div class="fin-row"><span class="fin-lbl">Premiação da noite c/ despesas</span>
-          <span class="fin-val" :class="summary.caixa_com_despesas >= 0 ? 'green' : 'red'">
-            {{ summary.caixa_com_despesas < 0 ? '- ' : '' }}{{ brl(summary.caixa_com_despesas) }}
-          </span>
-        </div>
-        <div class="fin-row"><span class="fin-lbl">Premiação ({{ pct(summary) }})</span><span class="fin-val gold">{{ brl(summary.premiacao_total) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Total arrecadado bruto</span> <span class="fin-val">{{ brl(summary.total_arrecadado_bruto) }}</span></div>
+        <p class="fin-section-title" style="margin-top:16px">DESCONTOS</p>
+        <div class="fin-row"><span class="fin-lbl">Caixa (R$ 10 por buy-in + 7,5% - dealer)</span> <span class="fin-val green">- {{ brl(summary.caixa_noite) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Ranking (7,5%)</span> <span class="fin-val red">- {{ brl(summary.ranking_noite) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Premiação (85%)</span><span class="fin-val gold">{{ brl(summary.premiacao_total) }}</span></div>
 
         <br>
         <p class="fin-section-title">RESUMO FINANCEIRO DO CAIXA</p>
         <div class="fin-row"><span class="fin-lbl">Caixa da noite</span> <span class="fin-val green">{{ brl(summary.caixa_noite) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa anterior</span> <span class="fin-val">{{ brl(summary.caixa_anterior) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Despesas</span> <span class="fin-val red">- {{ brl(summary.total_despesas) }}</span></div>
-        <div class="fin-row"><span class="fin-lbl">Caixa total</span> <span class="fin-val gold">{{ brl(summary.caixa_total) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Caixa após despesas</span> <span class="fin-val gold">{{ brl(summary.caixa_total) }}</span></div>
 
         <br>
         <p class="fin-section-title">PREMIAÇÃO DA NOITE</p>
@@ -135,10 +133,10 @@ const expForm = ref({ name: '', value: 0 })
 const expError = ref('')
 
 const brl = (v) => {
-  const n = Math.abs(v || 0)
-  return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const n = Number(v) || 0
+  const formatted = Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return `${n < 0 ? '- ' : ''}R$ ${formatted}`
 }
-const pct = (s) => s ? `${Math.round(s.premiacao_total / (s.caixa_noite || 1) * 100)}%` : '70%'
 
 function onExpenseChange(expense, event) {
   const val = parseFloat(event.target.value) || 0
