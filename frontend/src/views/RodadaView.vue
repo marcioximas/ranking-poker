@@ -435,7 +435,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import StatCard from '../components/StatCard.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { useRounds } from '../stores/rounds'
@@ -1006,6 +1006,8 @@ function doFinalize() {
     }
   })
 }
+
+watch(isUnlocked, fetchAllPlayers)
 
 onMounted(async () => {
   await Promise.all([fetchCurrent(), fetchAllPlayers(), fetchConfig()])

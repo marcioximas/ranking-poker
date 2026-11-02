@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useConfig } from '../stores/config'
 import { useToast } from '../composables/useToast'
 import { useAuth } from '../composables/useAuth'
@@ -70,7 +70,7 @@ import { playersApi } from '../api'
 
 const { config, fetch, save } = useConfig()
 const { show: toast } = useToast()
-const { requireAuth } = useAuth()
+const { requireAuth, isUnlocked } = useAuth()
 
 const form    = ref(null)
 const saving  = ref(false)
@@ -95,6 +95,11 @@ function doSave() {
     }
   })
 }
+
+watch(isUnlocked, async () => {
+  const { data } = await playersApi.list()
+  players.value = data
+})
 
 onMounted(async () => {
   const [, { data }] = await Promise.all([fetch(), playersApi.list()])

@@ -108,10 +108,33 @@ def test_list_players_returns_contact_fields(client, auth):
         json={"name": "Carol", "telefone": "11988887777", "pix": "carol@bank"},
         headers=auth,
     )
-    players = client.get("/api/players").json()
+    players = client.get("/api/players", headers=auth).json()
     carol = next(p for p in players if p["name"] == "Carol")
     assert carol["telefone"] == "11988887777"
     assert carol["pix"] == "carol@bank"
+
+
+def test_players_contact_fields_hidden_without_auth(client, auth):
+    pid = client.post(
+        "/api/players",
+        json={"name": "Eve", "telefone": "11955554444", "pix": "01895870160"},
+        headers=auth,
+    ).json()["id"]
+    listed = next(p for p in client.get("/api/players").json() if p["id"] == pid)
+    assert listed["telefone"] is None and listed["pix"] is None
+    one = client.get(f"/api/players/{pid}").json()
+    assert one["telefone"] is None and one["pix"] is None
+
+
+def test_verify_is_rate_limited(client):
+    for _ in range(5):
+        assert client.post("/api/auth/verify", json={"password": "bad"}).json()["valid"] is False
+    assert client.post("/api/auth/verify", json={"password": "bad"}).status_code == 429
+    assert client.post("/api/auth/verify", json={"password": "test-password"}).status_code == 429
+
+
+def test_openapi_available_in_dev(client):
+    assert client.get("/openapi.json").status_code == 200
 
 
 def test_get_player_by_id_returns_contact_fields(client, auth):
@@ -120,7 +143,7 @@ def test_get_player_by_id_returns_contact_fields(client, auth):
         json={"name": "Dave", "telefone": "11977776666", "pix": "dave-pix"},
         headers=auth,
     ).json()["id"]
-    r = client.get(f"/api/players/{pid}")
+    r = client.get(f"/api/players/{pid}", headers=auth)
     assert r.json()["telefone"] == "11977776666"
     assert r.json()["pix"] == "dave-pix"
 

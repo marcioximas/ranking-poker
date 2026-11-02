@@ -40,6 +40,8 @@ app.dependency_overrides[get_db] = _override_db
 @pytest.fixture(autouse=True)
 def reset_db():
     """Fresh schema for every test — no seed data, full isolation."""
+    from app.dependencies import reset_rate_limit
+    reset_rate_limit()
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)

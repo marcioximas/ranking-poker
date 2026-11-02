@@ -2,24 +2,32 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
-from ..dependencies import require_admin
+from ..dependencies import require_admin, is_admin
 from ..models import Player
 from ..schemas import PlayerRead, PlayerCreate, PlayerUpdate
 
 router = APIRouter(prefix="/players", tags=["Jogadores"])
 
 
+def _redact(player: Player) -> PlayerRead:
+    data = PlayerRead.model_validate(player, from_attributes=True)
+    data.telefone = None
+    data.pix = None
+    return data
+
+
 @router.get("", response_model=List[PlayerRead], summary="Listar todos os jogadores cadastrados")
-def list_players(db: Session = Depends(get_db)):
-    return db.query(Player).order_by(Player.name).all()
+def list_players(db: Session = Depends(get_db), admin: bool = Depends(is_admin)):
+    players = db.query(Player).order_by(Player.name).all()
+    return players if admin else [_redact(p) for p in players]
 
 
 @router.get("/{player_id}", response_model=PlayerRead, summary="Buscar jogador por ID")
-def get_player(player_id: int, db: Session = Depends(get_db)):
+def get_player(player_id: int, db: Session = Depends(get_db), admin: bool = Depends(is_admin)):
     player = db.query(Player).filter(Player.id == player_id).first()
     if not player:
         raise HTTPException(404, "Jogador não encontrado.")
-    return player
+    return player if admin else _redact(player)
 
 
 @router.post("", response_model=PlayerRead, status_code=201, summary="Cadastrar novo jogador",

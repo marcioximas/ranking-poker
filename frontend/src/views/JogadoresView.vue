@@ -88,7 +88,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import StatCard  from '../components/StatCard.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { playersApi } from '../api'
@@ -110,6 +110,9 @@ async function load() {
   const { data } = await playersApi.list()
   players.value = data
 }
+
+// Contact fields are only returned to authenticated requests, so reload on lock/unlock
+watch(isUnlocked, load)
 
 function openCreate() {
   requireAuth(() => {
