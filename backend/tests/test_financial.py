@@ -205,7 +205,7 @@ def test_financial_caixa_contribution_deducts_dealer_fee(client, auth, current_r
                     json={"player_id": player["id"], "buyin": 1}, headers=auth)
 
     data = client.get("/api/financial").json()
-    # Base = 700 - 70 (buy-in fees) - 50 (dealer) = 580.
-    # Caixa = 70 + 7,5% de 580 - 50 do dealer = 63,50.
+    # Base = 700 - 70 (buy-in fees) = 630 (o dealer não reduz a premiação).
+    # Caixa = 70 + 7,5% de 630 - 50 do dealer = 67,25.
     assert data["dealer_fee"] == 50.0
-    assert data["caixa_noite"] == 63.5
+    assert data["caixa_noite"] == 67.25

@@ -58,8 +58,8 @@ def _round_totals(rps: list[RoundPlayer], config: Config) -> tuple[float, float,
     total_fee = sum(_entry_fee(rp.buyin or 0, rp.rebuy or 0) for rp in rps)
     dealer_fee = _dealer_fee(len(rps))
     total_arrecadado = gross_entries + addons_value
-    total_tax = total_fee + dealer_fee
-    base_without_fee = max(total_arrecadado - total_tax, 0.0)
+    # O dealer é pago pelo caixa; só a taxa de buy-in sai da base da premiação.
+    base_without_fee = max(total_arrecadado - total_fee, 0.0)
     caixa_total = max(gross_entries + addons_value - dealer_fee, 0.0)
     return caixa_total, base_without_fee, total_fee, dealer_fee
 

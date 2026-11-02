@@ -19,7 +19,7 @@
 | `CAIXA_ANTERIOR_PCT_FIXED` | 7,5% | fatia da base que fica retida no caixa |
 | Premiação | 85% | fatia da base paga aos vencedores (70% para o 1º, 30% para o 2º) |
 | `ENTRY_FEE` | R$ 10,00 | taxa por buy-in (não incide sobre rebuy) |
-| `DEALER_FEE` | R$ 50,00 | taxa do dealer, cobrada quando a rodada tem 7+ jogadores |
+| `DEALER_FEE` | R$ 50,00 | taxa do dealer, cobrada quando a rodada tem 7+ jogadores; paga pelo caixa (não reduz a premiação) |
 
 7,5% + 7,5% + 85% = 100% da "base" de cada rodada.
 
@@ -35,8 +35,8 @@ total_fee        = Σ buyin_i * ENTRY_FEE                 (só conta buy-ins)
 dealer_fee       = DEALER_FEE se num_jogadores >= 7, senão 0
 
 total_arrecadado = gross + addons_value
-taxa_total       = total_fee + dealer_fee
-base             = max(total_arrecadado - taxa_total, 0)
+taxa_total       = total_fee
+base             = max(total_arrecadado - total_fee, 0)   # o dealer NÃO reduz a base
 caixa_noite      = max(total_fee + base * 7,5% - dealer_fee, 0) # arrecadacao do caixa
 
 premiacao_total  = base * 85%

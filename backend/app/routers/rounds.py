@@ -54,7 +54,6 @@ def _calc_prize_points(
     total_rebuys: int,
     total_addons: int,
     config: Config,
-    num_players: int = 0,
 ) -> int:
     """Convert a placement into ranking points based on the prize pool formula.
 
@@ -68,7 +67,7 @@ def _calc_prize_points(
 
     gross_entries = total_buyins * buyin_value + total_rebuys * rebuy_value
 
-    base_entries = max(gross_entries - _entry_fee(total_buyins, total_rebuys) - _dealer_fee(num_players), 0.0)
+    base_entries = max(gross_entries - _entry_fee(total_buyins, total_rebuys), 0.0)
 
     arrecadado = base_entries + total_addons * (config.addon_value or 0)
     prize_pool = arrecadado * 0.85
@@ -285,8 +284,9 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
     total_entry_fee = sum(_entry_fee(rp.buyin or 0, rp.rebuy or 0) for rp in rps)
     total_addons_value = total_addons * (config.addon_value or 0)
     dealer_fee = _dealer_fee(len(rps))
-    base_noite = max(total_entries_gross - total_entry_fee - dealer_fee, 0.0) + total_addons_value
-    caixa_noite = max(total_entries_gross + total_addons_value - dealer_fee, 0.0)
+    base_noite = max(total_entries_gross - total_entry_fee, 0.0) + total_addons_value
+    # Mesma fórmula do resumo financeiro: taxa de buy-in + 7,5% da base - dealer.
+    caixa_noite = max(total_entry_fee + base_noite * 0.075 - dealer_fee, 0.0)
     premiacao_total = base_noite * 0.85
     ranking_noite = base_noite * 0.075
 
@@ -299,7 +299,6 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
             total_rebuys,
             total_addons,
             config,
-            len(rps),
         )
         rp.bonus = (config.itm_bonus_points or 0) if (rp.colocacao or 0) in (1, 2) else 0
     db.commit()
