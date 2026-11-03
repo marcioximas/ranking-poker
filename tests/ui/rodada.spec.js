@@ -179,6 +179,15 @@ test.describe('Rodada Atual', () => {
     await page.getByRole('button', { name: '🔒 Trancar Rodada' }).click()
     await openAuthAndSubmit(page)
 
+    await expect(page.getByRole('heading', { name: 'Relatório da Mesa' })).toBeVisible()
+    const report = page.locator('textarea[readonly]').last()
+    await expect(report).toHaveValue(/VALOR DO PIX DE CADA UM/)
+    await expect(report).toHaveValue(/addons/)
+    await expect(report).toHaveValue(/RANKING ACUMULADO DO SEMESTRE/)
+    await expect(report).toHaveValue(/30% para o 1º lugar do ranking/)
+    await expect(report).toHaveValue(/70% para o torneio de final de ano/)
+    await expect(report).toHaveValue(/DESPESAS CADASTRADAS NO SEMESTRE/)
+
     const chargesHeader = page.getByText(`Cobranças PIX — ${receiverName}`).first()
     await expect(chargesHeader).toBeVisible()
     const chargesTable = chargesHeader.locator('xpath=following::table[1]')
@@ -300,6 +309,7 @@ test.describe('Rodada Atual', () => {
 
     await page.getByRole('button', { name: '🔒 Trancar Rodada' }).click()
     await openAuthAndSubmit(page)
+    await page.getByRole('button', { name: 'Fechar' }).last().click()
 
     await page.getByRole('button', { name: '✓ Finalizar Rodada' }).click()
     await expect(page.getByRole('heading', { name: 'Finalizar Rodada' })).toBeVisible()
@@ -308,8 +318,8 @@ test.describe('Rodada Atual', () => {
     await expect(page.getByRole('heading', { name: 'Rodada Finalizada!' })).toBeVisible()
     const prizeTitle = page.getByText('Premiação via PIX').first()
     await expect(prizeTitle).toBeVisible()
-    await expect(page.locator('.fin-row').filter({ hasText: `${p1Name} 🥇` }).first()).toContainText('R$ 59,50')
-    await expect(page.locator('.fin-row').filter({ hasText: `${p2Name} 🥈` }).first()).toContainText('R$ 25,50')
+    await expect(page.locator('.fin-row').filter({ hasText: `${p1Name} 🥇` }).first()).toContainText('R$ 47,60')
+    await expect(page.locator('.fin-row').filter({ hasText: `${p2Name} 🥈` }).first()).toContainText('R$ 20,40')
 
     await api.dispose()
   })

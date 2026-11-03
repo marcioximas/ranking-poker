@@ -432,6 +432,26 @@
       </div>
     </template>
   </BaseModal>
+
+  <BaseModal v-if="showClosingReport" @close="showClosingReport = false">
+    <h2>Relatório da Mesa</h2>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">
+      Relatório pronto para copiar e enviar pelo WhatsApp.
+    </p>
+    <textarea
+      :value="closingReport"
+      readonly
+      rows="24"
+      style="width:100%;resize:vertical;font:12px/1.5 monospace;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text)"
+      @focus="$event.target.select()"
+    />
+    <div class="modal-actions">
+      <button class="btn btn-gold" @click="copyClosingReport">
+        {{ closingReportCopied ? '✓ Copiado' : 'Copiar relatório' }}
+      </button>
+      <button class="btn btn-ghost" @click="showClosingReport = false">Fechar</button>
+    </div>
+  </BaseModal>
 </template>
 
 <script setup>
@@ -441,7 +461,7 @@ import BaseModal from '../components/BaseModal.vue'
 import { useRounds } from '../stores/rounds'
 import { useConfig } from '../stores/config'
 import { useToast } from '../composables/useToast'
-import { authApi, roundsApi, setAdminPassword } from '../api'
+import { authApi, financialApi, roundsApi, setAdminPassword } from '../api'
 import { useAuth } from '../composables/useAuth'
 
 const { currentRound, roundPlayers, allPlayers, fetchCurrent, fetchAllPlayers, startRound, addPlayer, updatePlayer, removePlayer, finalize } = useRounds()
@@ -456,6 +476,9 @@ const selectedId = ref(null)
 const showStartModal  = ref(false)
 const showPlayerModal = ref(false)
 const showFinalize    = ref(false)
+const showClosingReport = ref(false)
+const closingReport   = ref('')
+const closingReportCopied = ref(false)
 const editingPlayer   = ref(null)
 const finalizeResult  = ref(null)
 const pixCodes        = ref([])
@@ -564,16 +587,20 @@ const totalRebuys = computed(() => roundPlayers.value.reduce((s, p) => s + (p.re
 const totalAddons = computed(() => roundPlayers.value.reduce((s, p) => s + p.addon, 0))
 const totalEntries = computed(() => totalBuyins.value + totalRebuys.value)
 const totalEntriesValue = computed(() => roundPlayers.value.reduce((s, p) => s + calcEntryValue(p.buyin, p.rebuy || 0), 0))
-const caixaNoite  = computed(() =>
-  totalEntriesValue.value +
-  totalAddons.value * (config.value?.addon_value ?? 50)
+const totalArrecadado = computed(() =>
+  totalEntriesValue.value + totalAddons.value * (config.value?.addon_value ?? 50)
 )
-const premiacao = computed(() => caixaNoite.value * 0.85)
+const basePremiacao = computed(() => Math.max(totalArrecadado.value - totalBuyins.value * 10, 0))
+const dealerFee = computed(() => roundPlayers.value.length >= 7 ? 50 : 0)
+const caixaNoite = computed(() =>
+  Math.max(totalBuyins.value * 10 + basePremiacao.value * 0.075 - dealerFee.value, 0)
+)
+const premiacao = computed(() => basePremiacao.value * 0.85)
 
 // Calculates ranking points from placement using the prize pool formula.
 // Points = int(prize_reais) // 10 → 2 digits for <R$1000, 3 for ≥R$1000.
 function calcRoundPontos(colocacao) {
-  const prizePool = caixaNoite.value * 0.85
+  const prizePool = premiacao.value
   if (colocacao === 1) return Math.floor(prizePool * 0.70 / 10)
   if (colocacao === 2) return Math.floor(prizePool * 0.30 / 10)
   return 0
@@ -584,11 +611,19 @@ const previewPontos = computed(() => {
   const addon_v = config.value?.addon_value ?? 50
   let totalEntries = totalEntriesValue.value
   let addons = totalAddons.value
-  if (!editingPlayer.value) {
-    totalEntries += calcEntryValue(form.value.buyin, form.value.rebuy)
-    addons += form.value.addon || 0
+  let buyins = totalBuyins.value
+  const editedPlayer = editingPlayer.value
+    ? roundPlayers.value.find(p => p.player_id === editingPlayer.value.player_id)
+    : null
+  if (editedPlayer) {
+    totalEntries -= calcEntryValue(editedPlayer.buyin, editedPlayer.rebuy || 0)
+    addons -= editedPlayer.addon || 0
+    buyins -= editedPlayer.buyin || 0
   }
-  const prizePool = (totalEntries + addons * addon_v) * 0.85
+  totalEntries += calcEntryValue(form.value.buyin, form.value.rebuy)
+  addons += form.value.addon || 0
+  buyins += form.value.buyin || 0
+  const prizePool = Math.max(totalEntries + addons * addon_v - buyins * 10, 0) * 0.85
   if (form.value.colocacao === 1) return Math.floor(prizePool * 0.70 / 10)
   if (form.value.colocacao === 2) return Math.floor(prizePool * 0.30 / 10)
   return 0
@@ -625,6 +660,70 @@ const availablePlayers = computed(() => {
 const brl = (v) => {
   const n = Math.abs(v || 0)
   return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function buildClosingReport(financial) {
+  const dateLabel = currentRound.value?.date?.split('-').reverse().join('/') || ''
+  const buyinValue = config.value?.buyin_value ?? 50
+  const rebuyValue = config.value?.rebuy_value ?? buyinValue
+  const addonValue = config.value?.addon_value ?? 50
+  const playerCharges = roundPlayers.value.map(player => ({
+    ...player,
+    charge: (player.buyin || 0) * buyinValue
+      + (player.addon || 0) * addonValue
+      + (player.rebuy || 0) * rebuyValue,
+  })).sort((a, b) => b.charge - a.charge || a.player_name.localeCompare(b.player_name, 'pt-BR'))
+  const plural = (count, singular) => `${count || 0} ${count === 1 ? singular : `${singular}s`}`
+  const playerRows = playerCharges.map(player =>
+    `${player.player_name} (${plural(player.addon, 'addon')} + ${plural(player.rebuy, 'rebuy')}) — ${brl(player.charge)}`
+  )
+  const rankingFirstPrize = Math.round(financial.ranking_total * 0.3 * 100) / 100
+  const annualTournamentFund = Math.round((financial.ranking_total - rankingFirstPrize) * 100) / 100
+
+  return [
+    `🃏 FECHAMENTO DA MESA${currentRound.value?.label ? ` — ${currentRound.value.label.toUpperCase()}` : ''} 🃏`,
+    dateLabel ? `📅 ${dateLabel}` : '',
+    '',
+    `Valores: Buy-in ${brl(buyinValue)} (R$ 10,00 para o caixa + ${brl(Math.max(buyinValue - 10, 0))} para a base) + Add-on ${brl(addonValue)} | Rebuy ${brl(rebuyValue)}`,
+    '',
+    '💳 VALOR DO PIX DE CADA UM',
+    '(buy-in + addons + rebuys)',
+    '',
+    ...playerRows,
+    '',
+    `TOTAL ARRECADADO: ${brl(totalArrecadado.value)}`,
+    '',
+    'Conta:',
+    `${totalBuyins.value} buy-ins x ${brl(buyinValue)} = ${brl(totalBuyins.value * buyinValue)}`,
+    `${totalAddons.value} addons x ${brl(addonValue)} = ${brl(totalAddons.value * addonValue)}`,
+    `${totalRebuys.value} rebuys x ${brl(rebuyValue)} = ${brl(totalRebuys.value * rebuyValue)}`,
+    '',
+    `(-) Taxa direta dos buy-ins: ${brl(totalBuyins.value * 10)}`,
+    `Base para divisão dos 15%: ${brl(basePremiacao.value)}`,
+    `Dealer: ${brl(financial.dealer_fee)} — pago pelo caixa, sem reduzir a premiação`,
+    '',
+    `🏆 PREMIAÇÃO (85%): ${brl(premiacao.value)}`,
+    `🥇 1º lugar — ${brl(premiacao.value * 0.7)}`,
+    `🥈 2º lugar — ${brl(premiacao.value * 0.3)}`,
+    '',
+    `💰 RANKING DA RODADA: ${brl(financial.ranking_noite)}`,
+    `💰 RANKING ACUMULADO DO SEMESTRE: ${brl(financial.ranking_total)}`,
+    `🥇 30% para o 1º lugar do ranking: ${brl(rankingFirstPrize)}`,
+    `🏆 70% para o torneio de final de ano: ${brl(annualTournamentFund)}`,
+    '',
+    `📊 DESPESAS CADASTRADAS NO SEMESTRE: ${brl(financial.total_despesas)}`,
+    `💵 CAIXA GERAL ATUALIZADO: ${brl(financial.caixa_total)}`,
+  ].filter(Boolean).join('\n')
+}
+
+async function copyClosingReport() {
+  try {
+    await navigator.clipboard.writeText(closingReport.value)
+    closingReportCopied.value = true
+    toast('Relatório copiado. Pronto para colar no WhatsApp! ✓')
+  } catch {
+    toast('Não foi possível copiar automaticamente. Selecione o texto e copie manualmente.')
+  }
 }
 
 function resetForm() {
@@ -956,21 +1055,30 @@ function doToggleRoundLock() {
     return
   }
 
-  requireAuth(() => {
+  requireAuth(async () => {
     if (roundLocked.value) {
       roundLocked.value = false
       pixCodes.value = []
+      showClosingReport.value = false
       toast('Rodada desbloqueada para correções. ✓')
       return
     }
 
-    roundLocked.value = true
-    pixCodes.value = buildPixCodesForRoundCharges()
-    if (!pixCodes.value.length) {
-      toast('Rodada trancada, mas não foi possível gerar PIX. Verifique recebedor PIX em Configurações e valores de buy-in/rebuy/addon dos jogadores.')
-      return
+    try {
+      const { data: financial } = await financialApi.get()
+      roundLocked.value = true
+      pixCodes.value = buildPixCodesForRoundCharges()
+      closingReport.value = buildClosingReport(financial)
+      closingReportCopied.value = false
+      showClosingReport.value = true
+      if (!pixCodes.value.length) {
+        toast('Rodada trancada e relatório gerado, mas não foi possível gerar PIX. Verifique recebedor PIX em Configurações e valores da rodada.')
+        return
+      }
+      toast('Rodada trancada! Relatório e PIX de cobrança gerados. ✓')
+    } catch (e) {
+      toast(e.response?.data?.detail || 'Não foi possível gerar o relatório financeiro. A rodada não foi trancada.')
     }
-    toast('Rodada trancada! PIX de cobrança gerado para todos os jogadores. ✓')
   })
 }
 
