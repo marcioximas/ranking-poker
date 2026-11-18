@@ -44,9 +44,10 @@ def test_financial_caixa_includes_round_buyin(client, auth, player, current_roun
     assert data["total_rebuys"] == 1
     assert data["total_addons"] == 1
     assert data["total_arrecadado_bruto"] == 230.0
-    # Base = (100 + 80 - 10) + 50 = 220; caixa = taxa de R$10 + 7,5% da base.
-    assert data["caixa_noite"] == 10.0 + 220.0 * 0.075
-    assert data["ranking_noite"] == 220.0 * 0.075
+    # O bruto de R$230 é dividido em 85% de premiação e 7,5% para caixa/ranking.
+    assert data["caixa_noite"] == 230.0 * 0.075
+    assert data["ranking_noite"] == 230.0 * 0.075
+    assert data["premiacao_total"] == 230.0 * 0.85
 
 
 def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth):
@@ -94,27 +95,23 @@ def test_financial_accumulates_historical_rounds_in_previous_fields(client, auth
     # no acumulado assim que fecham — a Rodada 02 só é exibida como "noite" para
     # fins informativos, sem contar de novo (evita duplicidade).
     #
-    # Rodada 01: 1 buyin(100) + 1 rebuy(80) = 180 bruto; taxa R$10
-    # (R$10 por jogador que fez buy-in, não por rebuy);
-    # sem taxa de dealer (só 1 jogador, regra é 7+); base = (180-10) + 50(addon) = 220
-    # contribuição p/ caixa: taxa(10) + 7.5% de 220 = 26.5; p/ ranking: 7.5% de 220 = 16.5
+    # Rodada 01: bruto = 100 + 80 + 50(addon) = 230.
+    # Sem taxa de dealer; caixa e ranking recebem 7,5% do bruto = 17.25 cada.
     #
-    # Rodada 02: 1 buyin(100) = 100 bruto; taxa R$10; sem taxa de dealer
-    # base = 100 - 10 = 90
-    # contribuição p/ caixa: taxa(10) + 7.5% de 90 (6.75) = 16.75; p/ ranking: 6.75
+    # Rodada 02: bruto = 100; caixa e ranking recebem 7,5% = 7.50 cada.
     #
-    # caixa_anterior = 26.5 (só Rodada 01; a 02 fica separada em caixa_noite)
-    # ranking_anterior = 16.5 (só Rodada 01; a 02 fica de fora do "anterior" e
+    # caixa_anterior = 17.25 (só Rodada 01; a 02 fica separada em caixa_noite)
+    # ranking_anterior = 17.25 (só Rodada 01; a 02 fica de fora do "anterior" e
     # aparece separada em ranking_noite, para anterior + noite = total)
-    assert data["caixa_anterior"] == 26.5
-    assert data["ranking_anterior"] == 16.5
+    assert data["caixa_anterior"] == 17.25
+    assert data["ranking_anterior"] == 17.25
 
     # Caixa total = anterior + noite - despesas, sem duplicidade.
-    assert data["caixa_total"] == 43.25
-    assert data["caixa_atual"] == 43.25
-    assert data["caixa_noite"] == 16.75
-    assert data["ranking_noite"] == 6.75
-    assert data["ranking_total"] == 23.25
+    assert data["caixa_total"] == 24.75
+    assert data["caixa_atual"] == 24.75
+    assert data["caixa_noite"] == 7.5
+    assert data["ranking_noite"] == 7.5
+    assert data["ranking_total"] == 24.75
 
 
 # ── Expenses ────────────────────────────────────────────────────────────────
@@ -181,14 +178,13 @@ def test_financial_round_in_progress_adds_caixa_contribution(client, auth, playe
                 json={"player_id": player["id"], "buyin": 1, "rebuy": 0, "addon": 0}, headers=auth)
 
     data = client.get("/api/financial").json()
-    # Rodada em aberto: caixa = taxa de R$10 + 7,5% da base (100 - 10) = 16,75.
-    assert data["caixa_noite"] == 16.75
+    # Rodada em aberto: caixa e ranking recebem 7,5% do bruto de R$100.
+    assert data["caixa_noite"] == 7.5
     assert data["caixa_anterior"] == 0.0
-    assert data["caixa_total"] == 16.75
-    assert data["caixa_atual"] == 16.75
-    # base = 100 - 10 (taxa) = 90; ranking_noite (pendente) = 7.5% de 90 = 6.75
-    assert data["ranking_noite"] == 6.75
-    assert data["ranking_total"] == 6.75
+    assert data["caixa_total"] == 7.5
+    assert data["caixa_atual"] == 7.5
+    assert data["ranking_noite"] == 7.5
+    assert data["ranking_total"] == 7.5
 
 
 def test_financial_caixa_contribution_deducts_dealer_fee(client, auth, current_round):
@@ -205,7 +201,6 @@ def test_financial_caixa_contribution_deducts_dealer_fee(client, auth, current_r
                     json={"player_id": player["id"], "buyin": 1}, headers=auth)
 
     data = client.get("/api/financial").json()
-    # Base = 700 - 70 (buy-in fees) = 630 (o dealer não reduz a premiação).
-    # Caixa = 70 + 7,5% de 630 - 50 do dealer = 67,25.
+    # Caixa = 7,5% de 700 - 50 do dealer = 2,50.
     assert data["dealer_fee"] == 50.0
-    assert data["caixa_noite"] == 67.25
+    assert data["caixa_noite"] == 2.5

@@ -590,10 +590,10 @@ const totalEntriesValue = computed(() => roundPlayers.value.reduce((s, p) => s +
 const totalArrecadado = computed(() =>
   totalEntriesValue.value + totalAddons.value * (config.value?.addon_value ?? 50)
 )
-const basePremiacao = computed(() => Math.max(totalArrecadado.value - totalBuyins.value * 10, 0))
+const basePremiacao = computed(() => totalArrecadado.value)
 const dealerFee = computed(() => roundPlayers.value.length >= 7 ? 50 : 0)
 const caixaNoite = computed(() =>
-  Math.max(totalBuyins.value * 10 + basePremiacao.value * 0.075 - dealerFee.value, 0)
+  Math.max(basePremiacao.value * 0.075 - dealerFee.value, 0)
 )
 const premiacao = computed(() => basePremiacao.value * 0.85)
 
@@ -611,19 +611,16 @@ const previewPontos = computed(() => {
   const addon_v = config.value?.addon_value ?? 50
   let totalEntries = totalEntriesValue.value
   let addons = totalAddons.value
-  let buyins = totalBuyins.value
   const editedPlayer = editingPlayer.value
     ? roundPlayers.value.find(p => p.player_id === editingPlayer.value.player_id)
     : null
   if (editedPlayer) {
     totalEntries -= calcEntryValue(editedPlayer.buyin, editedPlayer.rebuy || 0)
     addons -= editedPlayer.addon || 0
-    buyins -= editedPlayer.buyin || 0
   }
   totalEntries += calcEntryValue(form.value.buyin, form.value.rebuy)
   addons += form.value.addon || 0
-  buyins += form.value.buyin || 0
-  const prizePool = Math.max(totalEntries + addons * addon_v - buyins * 10, 0) * 0.85
+  const prizePool = (totalEntries + addons * addon_v) * 0.85
   if (form.value.colocacao === 1) return Math.floor(prizePool * 0.70 / 10)
   if (form.value.colocacao === 2) return Math.floor(prizePool * 0.30 / 10)
   return 0
@@ -684,7 +681,7 @@ function buildClosingReport(financial) {
     `🃏 FECHAMENTO DA MESA${currentRound.value?.label ? ` — ${currentRound.value.label.toUpperCase()}` : ''} 🃏`,
     dateLabel ? `📅 ${dateLabel}` : '',
     '',
-    `Valores: Buy-in ${brl(buyinValue)} (R$ 10,00 para o caixa + ${brl(Math.max(buyinValue - 10, 0))} para a base) + Add-on ${brl(addonValue)} | Rebuy ${brl(rebuyValue)}`,
+    `Valores: Buy-in ${brl(buyinValue)} + Add-on ${brl(addonValue)} | Rebuy ${brl(rebuyValue)}`,
     '',
     '💳 VALOR DO PIX DE CADA UM',
     '(buy-in + addons + rebuys)',
@@ -698,8 +695,9 @@ function buildClosingReport(financial) {
     `${totalAddons.value} addons x ${brl(addonValue)} = ${brl(totalAddons.value * addonValue)}`,
     `${totalRebuys.value} rebuys x ${brl(rebuyValue)} = ${brl(totalRebuys.value * rebuyValue)}`,
     '',
-    `(-) Taxa direta dos buy-ins: ${brl(totalBuyins.value * 10)}`,
-    `Base para divisão dos 15%: ${brl(basePremiacao.value)}`,
+    `(-) Rake (15% do total arrecadado): ${brl(totalArrecadado.value * 0.15)}`,
+    `Base para divisão: ${brl(totalArrecadado.value)}`,
+    `💰 Caixa (7,5%): ${brl(totalArrecadado.value * 0.075)}`,
     `Dealer: ${brl(financial.dealer_fee)} — pago pelo caixa, sem reduzir a premiação`,
     '',
     `🏆 PREMIAÇÃO (85%): ${brl(premiacao.value)}`,

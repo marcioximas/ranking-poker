@@ -68,7 +68,7 @@
         <div class="fin-row"><span class="fin-lbl">Addons da noite</span>      <span class="fin-val">{{ summary.total_addons ?? 0 }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Total arrecadado bruto</span> <span class="fin-val">{{ brl(summary.total_arrecadado_bruto) }}</span></div>
         <p class="fin-section-title" style="margin-top:16px">DESCONTOS</p>
-        <div class="fin-row"><span class="fin-lbl">Caixa (R$ 10 por buy-in + 7,5% - dealer)</span> <span class="fin-val green">- {{ brl(summary.caixa_noite) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">Caixa (7,5% - dealer)</span> <span class="fin-val green">- {{ brl(summary.caixa_noite) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Ranking (7,5%)</span> <span class="fin-val red">- {{ brl(summary.ranking_noite) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Premiação (85%)</span><span class="fin-val gold">{{ brl(summary.premiacao_total) }}</span></div>
 

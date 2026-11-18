@@ -150,6 +150,56 @@ def test_finalize_round(client, auth, current_round, player):
     assert data["ranking"][0]["player_id"] == player["id"]
 
 
+def test_finalize_uses_gross_amount_for_prize_and_ranking(client, auth, current_round):
+    client.put(
+        "/api/config",
+        json={
+            "buyin_value": 60.0,
+            "rebuy_value": 50.0,
+            "addon_value": 50.0,
+            "tournament_name": "T",
+            "presence_points": 10,
+            "punctuality_points": 15,
+            "itm_bonus_points": 5,
+            "prize_pct": 70,
+            "ranking_pct": 30,
+        },
+        headers=auth,
+    )
+
+    for index in range(6):
+        player = client.post(
+            "/api/players",
+            json={"name": f"Jogador {index}"},
+            headers=auth,
+        ).json()
+        client.post(
+            f"/api/rounds/{current_round['id']}/players",
+            json={
+                "player_id": player["id"],
+                "buyin": 1,
+                "rebuy": 1 if index < 4 else 0,
+                "addon": 1,
+                "colocacao": 1 if index == 0 else 2 if index == 1 else 0,
+            },
+            headers=auth,
+        )
+
+    result = client.post(
+        f"/api/rounds/{current_round['id']}/finalize",
+        headers=auth,
+    ).json()
+
+    assert result["total_buyins"] == 6
+    assert result["total_rebuys"] == 4
+    assert result["total_addons"] == 6
+    assert result["premiacao_total"] == pytest.approx(731.0)
+    assert result["ranking_noite"] == pytest.approx(64.5)
+    assert result["caixa_noite"] == pytest.approx(64.5)
+    assert result["ranking"][0]["prize"] == pytest.approx(511.7)
+    assert result["ranking"][1]["prize"] == pytest.approx(219.3)
+
+
 def test_finalize_empty_round_returns_400(client, auth, current_round):
     r = client.post(f"/api/rounds/{current_round['id']}/finalize", headers=auth)
     assert r.status_code == 400
