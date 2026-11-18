@@ -655,8 +655,9 @@ const availablePlayers = computed(() => {
 })
 
 const brl = (v) => {
-  const n = Math.abs(v || 0)
-  return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const n = Number(v) || 0
+  const formatted = Math.abs(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return `${n < 0 ? '- ' : ''}R$ ${formatted}`
 }
 
 function buildClosingReport(financial) {

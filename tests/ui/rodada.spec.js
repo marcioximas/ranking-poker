@@ -175,6 +175,14 @@ test.describe('Rodada Atual', () => {
 
     const app = new AppPage(page)
     await app.goto()
+    await page.route('**/api/financial', async (route) => {
+      const response = await route.fetch()
+      const financial = await response.json()
+      await route.fulfill({
+        response,
+        json: { ...financial, caixa_total: -85 },
+      })
+    })
 
     await page.getByRole('button', { name: '🔒 Trancar Rodada' }).click()
     await openAuthAndSubmit(page)
@@ -188,6 +196,7 @@ test.describe('Rodada Atual', () => {
     await expect(report).toHaveValue(/Caixa \(7,5%\): R\$ 15,00/)
     await expect(report).toHaveValue(/PREMIAÇÃO \(85%\): R\$ 170,00/)
     await expect(report).not.toHaveValue(/Taxa direta dos buy-ins/)
+    await expect(report).toHaveValue(/CAIXA GERAL ATUALIZADO: - R\$ 85,00/)
     await expect(report).toHaveValue(/RANKING ACUMULADO DO SEMESTRE/)
     await expect(report).toHaveValue(/30% para o 1º lugar do ranking/)
     await expect(report).toHaveValue(/70% para o torneio de final de ano/)
