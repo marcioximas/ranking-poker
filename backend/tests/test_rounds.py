@@ -150,7 +150,7 @@ def test_finalize_round(client, auth, current_round, player):
     assert data["ranking"][0]["player_id"] == player["id"]
 
 
-def test_finalize_uses_gross_amount_for_prize_and_ranking(client, auth, current_round):
+def test_finalize_uses_base_after_buyin_fee_for_prize_and_ranking(client, auth, current_round):
     client.put(
         "/api/config",
         json={
@@ -193,11 +193,11 @@ def test_finalize_uses_gross_amount_for_prize_and_ranking(client, auth, current_
     assert result["total_buyins"] == 6
     assert result["total_rebuys"] == 4
     assert result["total_addons"] == 6
-    assert result["premiacao_total"] == pytest.approx(731.0)
-    assert result["ranking_noite"] == pytest.approx(64.5)
-    assert result["caixa_noite"] == pytest.approx(64.5)
-    assert result["ranking"][0]["prize"] == pytest.approx(511.7)
-    assert result["ranking"][1]["prize"] == pytest.approx(219.3)
+    assert result["premiacao_total"] == pytest.approx(680.0)
+    assert result["ranking_noite"] == pytest.approx(60.0)
+    assert result["caixa_noite"] == pytest.approx(120.0)
+    assert result["ranking"][0]["prize"] == pytest.approx(476.0)
+    assert result["ranking"][1]["prize"] == pytest.approx(204.0)
 
 
 def test_finalize_empty_round_returns_400(client, auth, current_round):

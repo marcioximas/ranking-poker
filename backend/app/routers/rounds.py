@@ -12,6 +12,7 @@ from ..schemas import (
 
 router = APIRouter(prefix="/rounds", tags=["Rodadas"])
 
+ENTRY_FEE = 10.0
 DEALER_FEE = 50.0
 DEALER_FEE_MIN_PLAYERS = 7
 
@@ -43,6 +44,10 @@ def _entry_gross(buyins: int, rebuys: int, config: Config) -> float:
     return buyins * buyin_value + rebuys * rebuy_value
 
 
+def _entry_fee(buyins: int) -> float:
+    return max(buyins, 0) * ENTRY_FEE
+
+
 def _calc_prize_points(
     colocacao: int,
     total_buyins: int,
@@ -61,8 +66,9 @@ def _calc_prize_points(
         rebuy_value = buyin_value
 
     gross_entries = total_buyins * buyin_value + total_rebuys * rebuy_value
-    arrecadado = gross_entries + total_addons * (config.addon_value or 0)
-    prize_pool = arrecadado * 0.85
+    total_arrecadado = gross_entries + total_addons * (config.addon_value or 0)
+    base = max(total_arrecadado - _entry_fee(total_buyins), 0.0)
+    prize_pool = base * 0.85
     if colocacao == 1:
         prize = prize_pool * 0.70
     elif colocacao == 2:
@@ -273,14 +279,16 @@ def finalize_round(round_id: int, db: Session = Depends(get_db)):
     total_rebuys = sum(rp.rebuy or 0 for rp in rps)
     total_addons = sum(rp.addon for rp in rps)
     total_entries_gross = sum(_entry_gross(rp.buyin or 0, rp.rebuy or 0, config) for rp in rps)
+    total_entry_fee = _entry_fee(total_buyins)
     total_addons_value = total_addons * (config.addon_value or 0)
     dealer_fee = _dealer_fee(len(rps))
     total_arrecadado = total_entries_gross + total_addons_value
-    # O rake de 15% é dividido igualmente entre ranking e caixa; o dealer
-    # é pago pelo caixa e não reduz a premiação.
-    caixa_noite = max(total_arrecadado * 0.075 - dealer_fee, 0.0)
-    premiacao_total = total_arrecadado * 0.85
-    ranking_noite = total_arrecadado * 0.075
+    base_noite = max(total_arrecadado - total_entry_fee, 0.0)
+    # A taxa fixa de buy-in vai para o caixa; o dealer sai do caixa sem
+    # reduzir a base da premiação ou do ranking.
+    caixa_noite = max(total_entry_fee + base_noite * 0.075 - dealer_fee, 0.0)
+    premiacao_total = base_noite * 0.85
+    ranking_noite = base_noite * 0.075
 
     # Calculate pontos from colocacao using the prize pool formula, and award
     # the ITM bonus automatically to 1st and 2nd place.

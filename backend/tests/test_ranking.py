@@ -31,8 +31,8 @@ def test_ranking_scores_after_finalize(client, auth, current_round, player):
     r = client.get("/api/ranking")
     data = r.json()
     row = next(row for row in data["rows"] if row["player_id"] == player["id"])
-    # 1 buyin × R$50 = R$50; prize_pool = R$42.50
-    # 1st = int(42.50 × 0.70) // 10 = 2
+    # 1 buyin × R$50 = R$50; taxa R$10; prize_pool = R$34
+    # 1st = int(34 × 0.70) // 10 = 2
     # score = 2 (pontos) + 10 (presenca) + 5 (bônus ITM automático) + 15 (pontualidade) = 32
     assert row["scores"][str(current_round["id"])] == 32
     assert row["buyins"][str(current_round["id"])] == 1

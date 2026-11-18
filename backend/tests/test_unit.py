@@ -59,13 +59,13 @@ def make_config(buyin_value=50.0, addon_value=50.0):
 
 class TestCalcPrizePoints:
     def test_first_place_basic(self):
-        # 10 buyins * R$50 = R$500 bruto; prize_pool = 500 * 0.85 = 425
-        # 1st = 425 * 0.70 = 297.5 → int(297.5) // 10 = 29
-        assert _calc_prize_points(1, 10, 0, 0, make_config()) == 29
+        # 10 buyins * R$50 = R$500 bruto; taxa de R$100; base = 400.
+        # prize_pool = 400 * 0.85 = 340; 1st = 238 → int(238) // 10 = 23
+        assert _calc_prize_points(1, 10, 0, 0, make_config()) == 23
 
     def test_second_place_basic(self):
-        # prize_pool = 425, 2nd = 425 * 0.30 = 127.5 → int(127.5) // 10 = 12
-        assert _calc_prize_points(2, 10, 0, 0, make_config()) == 12
+        # prize_pool = 340, 2nd = 340 * 0.30 = 102 → int(102) // 10 = 10
+        assert _calc_prize_points(2, 10, 0, 0, make_config()) == 10
 
     def test_not_placed_returns_zero(self):
         assert _calc_prize_points(0, 10, 0, 0, make_config()) == 0
@@ -81,9 +81,9 @@ class TestCalcPrizePoints:
         assert int(1250) // 10 == 125
 
     def test_with_addons(self):
-        # R$250 em buy-ins + R$150 em addons = R$400 bruto; prize_pool = R$340
-        # 1st = 340 * 0.70 = 238 → int(238) // 10 = 23
-        assert _calc_prize_points(1, 5, 0, 3, make_config()) == 23
+        # Buy-ins: R$250 - taxa de R$50; + R$150 em addons = R$350; prize_pool = 297.5
+        # 1st = 297.5 * 0.70 = 208.25 → int(208.25) // 10 = 20
+        assert _calc_prize_points(1, 5, 0, 3, make_config()) == 20
 
     def test_zero_arrecadado_gives_zero_points(self):
         assert _calc_prize_points(1, 0, 0, 0, make_config()) == 0
@@ -92,8 +92,8 @@ class TestCalcPrizePoints:
         config = make_config(buyin_value=50.0, addon_value=50.0)
         pts1 = _calc_prize_points(1, 10, 0, 0, config)
         pts2 = _calc_prize_points(2, 10, 0, 0, config)
-        # confirm they come from the same prize pool (85% do bruto)
-        arrecadado = 10 * 50.0
+        # confirm they come from the same prize pool (85% da base após taxa)
+        arrecadado = 10 * 50.0 - 10 * 10.0
         prize_pool = arrecadado * 0.85
         assert pts1 == int(prize_pool * 0.70) // 10
         assert pts2 == int(prize_pool * 0.30) // 10

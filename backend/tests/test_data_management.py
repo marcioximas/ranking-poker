@@ -131,9 +131,10 @@ class TestActiveRoundsManagement:
     def _finalize_round_with_player(self, client, auth, label, p1, p2):
         """Creates a round where p1 gets 1st place (colocacao=1) and finalizes it.
 
-        2 buyins x R$50 = R$100 bruto; prize_pool = 100 x 0.85 = R$85.
-        p1 (1st): int(85 x 0.70) // 10 = 5 points.
-        p1 also gets the automatic ITM bonus (5 pts) for 1st place → total = 5+5 = 10.
+        2 buyins x R$50 = R$100 bruto; taxa = R$20; base = R$80.
+        prize_pool = 80 x 0.85 = R$68.
+        p1 (1st): int(68 x 0.70) // 10 = 4 points.
+        p1 also gets the automatic ITM bonus (5 pts) for 1st place → total = 4+5 = 9.
         """
         round_id = client.post("/api/rounds/current", json={"label": label}, headers=auth).json()["id"]
         for p in [p1, p2]:
@@ -155,16 +156,16 @@ class TestActiveRoundsManagement:
         r1 = self._finalize_round_with_player(client, auth, "R1", p1, p2)
         r2 = self._finalize_round_with_player(client, auth, "R2", p1, p2)
 
-        # Each round: 1st place with 2 buyins = 5 pts + 5 pts ITM bonus = 10 → total = 20
+        # Each round: 1st place with 2 buyins = 4 pts + 5 pts ITM bonus = 9 → total = 18
         ranking_full = client.get("/api/ranking").json()
         p1_full = next(r for r in ranking_full["rows"] if r["player_id"] == p1["id"])
-        assert p1_full["total"] == 20
+        assert p1_full["total"] == 18
 
         # Deactivate R2 → only R1 counts
         client.put("/api/ranking/active-rounds", json={"round_ids": [r1]}, headers=auth)
         ranking_partial = client.get("/api/ranking").json()
         p1_partial = next(r for r in ranking_partial["rows"] if r["player_id"] == p1["id"])
-        assert p1_partial["total"] == 10
+        assert p1_partial["total"] == 9
 
     def test_no_active_rounds_gives_zero_total(self, client, auth, two_players):
         p1, p2 = two_players
@@ -181,11 +182,11 @@ class TestActiveRoundsManagement:
         r2 = self._finalize_round_with_player(client, auth, "R2", p1, p2)
         r3 = self._finalize_round_with_player(client, auth, "R3", p1, p2)
 
-        # Activate only R1 and R3 (skip R2) → 10 + 10 = 20
+        # Activate only R1 and R3 (skip R2) → 9 + 9 = 18
         client.put("/api/ranking/active-rounds", json={"round_ids": [r1, r3]}, headers=auth)
         ranking = client.get("/api/ranking").json()
         p1_row = next(r for r in ranking["rows"] if r["player_id"] == p1["id"])
-        assert p1_row["total"] == 20
+        assert p1_row["total"] == 18
         assert ranking["active_round_ids"] == [r1, r3]
 
     def test_current_round_never_in_ranking(self, client, auth, two_players):

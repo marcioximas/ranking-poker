@@ -15,13 +15,14 @@
 
 | Constante | Valor | Descrição |
 |---|---|---|
-| `RANKING_PCT_FIXED` | 7,5% | fatia do total arrecadado que vai para o ranking semestral |
-| `CAIXA_ANTERIOR_PCT_FIXED` | 7,5% | fatia do total arrecadado que fica retida no caixa |
-| Premiação | 85% | fatia do total arrecadado paga aos vencedores (70% para o 1º, 30% para o 2º) |
+| `RANKING_PCT_FIXED` | 7,5% | fatia da base que vai para o ranking semestral |
+| `CAIXA_ANTERIOR_PCT_FIXED` | 7,5% | fatia da base que fica retida no caixa |
+| Premiação | 85% | fatia da base paga aos vencedores (70% para o 1º, 30% para o 2º) |
+| `ENTRY_FEE` | R$ 10,00 | taxa fixa por buy-in, destinada diretamente ao caixa |
 | `DEALER_FEE` | R$ 50,00 | taxa do dealer, cobrada quando a rodada tem 7+ jogadores; paga pelo caixa (não reduz a premiação) |
 
-O rake é 15% do total arrecadado: 7,5% vai para o ranking, 7,5% para o caixa e
-os 85% restantes são pagos como premiação.
+O caixa recebe a taxa fixa de R$ 10,00 por buy-in. Do restante, o rake de 15% é
+dividido igualmente: 7,5% para o ranking, 7,5% para o caixa e 85% para a premiação.
 
 ## Fórmulas por rodada
 
@@ -34,8 +35,9 @@ total_bruto      = gross + addons_value
 dealer_fee       = DEALER_FEE se num_jogadores >= 7, senão 0
 
 total_arrecadado = gross + addons_value
-base             = total_arrecadado
-caixa_noite      = max(base * 7,5% - dealer_fee, 0) # arrecadacao do caixa
+total_fee        = Σ buyin_i * ENTRY_FEE                 (só conta buy-ins)
+base             = max(total_arrecadado - total_fee, 0)  # o dealer NÃO reduz a base
+caixa_noite      = max(total_fee + base * 7,5% - dealer_fee, 0)
 
 premiacao_total  = base * 85%
 premiacao_1      = premiacao_total * 70%
@@ -45,18 +47,18 @@ ranking_noite    = base * 7,5%
 
 No resumo da rodada, a divisão é exibida como:
 
-- **Caixa**: `7,5% do total arrecadado - dealer_fee`.
-- **Ranking**: `7,5% do total arrecadado`.
+- **Caixa**: `R$ 10 por buy-in + 7,5% da base - dealer_fee`.
+- **Ranking**: `7,5% da base`.
 
 O `total_arrecadado_bruto` é `gross + addons_value`, antes desses descontos.
 
 ## Regra do Caixa
 
 - **Rodada fechada (finalizada)**: assim que finaliza, contribui para o acumulado
-  `base * 7,5% - dealer_fee` — imediatamente, mesmo que nenhuma rodada nova tenha
+  `total_fee + base * 7,5% - dealer_fee` — imediatamente, mesmo que nenhuma rodada nova tenha
   começado depois dela.
 - **Rodada em aberto (não finalizada)**: exibe e soma provisoriamente o mesmo valor
-  `base * 7,5% - dealer_fee` com os buy-ins registrados até o momento. Quando novos
+  `total_fee + base * 7,5% - dealer_fee` com os buy-ins registrados até o momento. Quando novos
   buy-ins entram, o valor é recalculado; ao fechar, entra no acumulado uma única vez.
 - **Despesas**: abatidas uma única vez no `caixa_total`, nunca na premiação, no
   `caixa_anterior` nem no `caixa_noite`. São a soma de todas as linhas da tabela no
@@ -64,7 +66,7 @@ O `total_arrecadado_bruto` é `gross + addons_value`, antes desses descontos.
 
 ```
 caixa_anterior = Financial.caixa_anterior (valor base editável)
-               + Σ (rodadas finalizadas anteriores à "noite": base * 7,5% - dealer_fee)
+               + Σ (rodadas finalizadas anteriores à "noite": total_fee + base * 7,5% - dealer_fee)
 
 caixa_total    = caixa_anterior + caixa_noite - Σ despesas cadastradas
 ```
