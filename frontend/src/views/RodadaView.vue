@@ -808,19 +808,20 @@ async function doSavePlayer() {
     formError.value = 'Defina Buy-in = 1 para registrar rebuys.'
     return
   }
-  if (!editingPlayer.value) {
-    const existing = allPlayers.value.find(p => p.name.toLowerCase() === form.value.name.trim().toLowerCase())
-    if (!existing?.pix) {
-      formError.value = existing
-        ? `${existing.name} não tem PIX cadastrado. Cadastre na aba Jogadores antes de adicionar.`
-        : 'Jogador não encontrado. Cadastre-o na aba Jogadores com nome e PIX antes de adicionar.'
-      return
-    }
-  }
   formError.value = ''
   requireAuth(async () => {
     saving.value = true
     try {
+      if (!editingPlayer.value) {
+        await fetchAllPlayers()
+        const existing = allPlayers.value.find(p => p.name.toLowerCase() === form.value.name.trim().toLowerCase())
+        if (!existing?.pix) {
+          formError.value = existing
+            ? `${existing.name} não tem PIX cadastrado. Cadastre na aba Jogadores antes de adicionar.`
+            : 'Jogador não encontrado. Cadastre-o na aba Jogadores com nome e PIX antes de adicionar.'
+          return
+        }
+      }
       if (editingPlayer.value) {
         const payload = roundLocked.value
           ? {
@@ -1031,17 +1032,24 @@ function openFinalize() {
     toast('Defina o 2º lugar antes de finalizar.')
     return
   }
-  const fullP1 = allPlayers.value.find(p => p.id === player1st.value.player_id)
-  const fullP2 = allPlayers.value.find(p => p.id === player2nd.value.player_id)
-  if (!fullP1?.pix) {
-    toast(`Cadastre o PIX de ${player1st.value.player_name} antes de finalizar.`)
-    return
-  }
-  if (!fullP2?.pix) {
-    toast(`Cadastre o PIX de ${player2nd.value.player_name} antes de finalizar.`)
-    return
-  }
-  showFinalize.value = true
+  requireAuth(async () => {
+    try {
+      await fetchAllPlayers()
+      const fullP1 = allPlayers.value.find(p => p.id === player1st.value.player_id)
+      const fullP2 = allPlayers.value.find(p => p.id === player2nd.value.player_id)
+      if (!fullP1?.pix) {
+        toast(`Cadastre o PIX de ${player1st.value.player_name} antes de finalizar.`)
+        return
+      }
+      if (!fullP2?.pix) {
+        toast(`Cadastre o PIX de ${player2nd.value.player_name} antes de finalizar.`)
+        return
+      }
+      showFinalize.value = true
+    } catch {
+      toast('Não foi possível consultar os jogadores. Tente novamente.')
+    }
+  })
 }
 
 function doToggleRoundLock() {
@@ -1066,6 +1074,7 @@ function doToggleRoundLock() {
     }
 
     try {
+      await fetchAllPlayers()
       const { data: financial } = await financialApi.get()
       roundLocked.value = true
       pixCodes.value = buildPixCodesForRoundCharges()
@@ -1116,7 +1125,13 @@ function doFinalize() {
   })
 }
 
-watch(isUnlocked, fetchAllPlayers)
+watch(isUnlocked, async () => {
+  try {
+    await fetchAllPlayers()
+  } catch {
+    toast('Não foi possível atualizar os jogadores. Tente novamente.')
+  }
+})
 
 onMounted(async () => {
   await Promise.all([fetchCurrent(), fetchAllPlayers(), fetchConfig()])

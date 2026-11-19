@@ -129,6 +129,41 @@ test.describe('Rodada Atual', () => {
     await api.dispose()
   })
 
+  test('valida o PIX após autenticar antes de adicionar jogador', async ({ page }) => {
+    const api = await request.newContext()
+    await deleteCurrentRound(api)
+    const stamp = Date.now()
+    const withPix = `Jogador com PIX ${stamp}`
+    const withoutPix = `Jogador sem PIX ${stamp}`
+    await ensurePlayer(api, withPix, 'chave-pix-teste')
+    await ensurePlayer(api, withoutPix, null)
+    const roundRes = await api.post(`${API}/rounds/current`, {
+      data: { label: `Rodada valida PIX ${stamp}` },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+    expect(roundRes.ok()).toBeTruthy()
+
+    try {
+      await page.goto('/')
+      await page.getByRole('button', { name: '+ Adicionar Jogador' }).click()
+      await page.getByPlaceholder('Nome do jogador').fill(withPix)
+      await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
+      await expect(page.locator('#auth-password')).toBeVisible()
+      await openAuthAndSubmit(page)
+      await expect(page.getByRole('heading', { name: 'Novo Jogador' })).not.toBeVisible()
+      await expect(page.locator('tbody tr').filter({ hasText: withPix })).toBeVisible()
+
+      await page.getByRole('button', { name: '+ Adicionar Jogador' }).click()
+      await page.getByPlaceholder('Nome do jogador').fill(withoutPix)
+      await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
+      await expect(page.getByText(`${withoutPix} não tem PIX cadastrado. Cadastre na aba Jogadores antes de adicionar.`)).toBeVisible()
+      await expect(page.locator('tbody tr').filter({ hasText: withoutPix })).toHaveCount(0)
+    } finally {
+      await deleteCurrentRound(api)
+      await api.dispose()
+    }
+  })
+
   test('ao trancar rodada gera PIX de cobrança para todos os jogadores no admin configurado', async ({ page }) => {
     const api = await request.newContext()
     await deleteCurrentRound(api)

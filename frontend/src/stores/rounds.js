@@ -4,11 +4,20 @@ import { roundsApi, playersApi } from '../api'
 const currentRound = ref(null)
 const roundPlayers = ref([])
 const allPlayers = ref([])
+let latestPlayersRequest = null
 
 export function useRounds() {
   async function fetchAllPlayers() {
-    const { data } = await playersApi.list()
-    allPlayers.value = data
+    const request = playersApi.list().then(({ data }) => {
+      if (latestPlayersRequest === request) allPlayers.value = data
+    })
+    latestPlayersRequest = request
+    let pending = request
+    do {
+      await pending
+      if (pending === latestPlayersRequest) break
+      pending = latestPlayersRequest
+    } while (true)
   }
 
   async function fetchCurrent() {
