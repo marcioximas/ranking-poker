@@ -77,14 +77,18 @@ Despesas não reduzem `premiacao_total`; reduzem somente o caixa acumulado.
 
 Mesma lógica do caixa, com uma diferença: o ranking **nunca** soma o valor da
 rodada "da noite" dentro de `ranking_anterior` — ela sempre entra separada em
-`ranking_noite`, para que a soma `anterior + noite` sempre bata com `total`.
+`ranking_noite`; as retiradas são descontadas em separado para obter o saldo total.
 
 ```
 ranking_anterior = Financial.ranking_anterior (valor base editável)
                  + Σ (rodadas finalizadas, exceto a "da noite": base * 7,5%)
 
-ranking_total    = ranking_anterior + ranking_noite   (sempre)
+ranking_total    = ranking_anterior + ranking_noite - Σ retiradas do ranking
 ```
+
+As retiradas do ranking são registradas separadamente com nome e valor. Elas
+reduzem somente o saldo financeiro do ranking; não afetam o caixa, as despesas
+do caixa, a premiação da rodada ou os pontos.
 
 O ranking (pontos, não dinheiro) exibido em `/ranking` é independente disso: soma o
 campo `score` das rodadas com `is_active_in_ranking = True`, sem relação com os valores

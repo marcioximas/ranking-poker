@@ -30,6 +30,37 @@ def test_update_financial(client, auth):
     assert data["ranking_anterior"] == 800.0
 
 
+def test_ranking_withdrawal_only_reduces_ranking_money(client, auth):
+    client.put("/api/financial", json={"caixa_anterior": 300, "ranking_anterior": 500}, headers=auth)
+    before = client.get("/api/financial").json()
+    scores_before = client.get("/api/ranking").json()
+
+    payload = {"name": "Churrasco", "value": 100}
+    assert client.post("/api/ranking-withdrawals", json=payload).status_code == 401
+    response = client.post("/api/ranking-withdrawals", json=payload, headers=auth)
+    assert response.status_code == 201
+    assert client.post("/api/ranking-withdrawals", json=payload, headers=auth).status_code == 409
+
+    after = client.get("/api/financial").json()
+    assert after["ranking_total"] == before["ranking_total"] - 100
+    assert after["ranking_anterior"] == before["ranking_anterior"]
+    assert after["total_ranking_withdrawals"] == 100
+    assert after["ranking_withdrawals"] == [response.json()]
+    assert after["caixa_total"] == before["caixa_total"]
+    assert after["total_despesas"] == before["total_despesas"]
+    assert client.get("/api/ranking").json() == scores_before
+
+
+def test_ranking_withdrawal_rejects_empty_name_and_invalid_value(client, auth):
+    for payload in [
+        {"name": " ", "value": 100},
+        {"name": "Churrasco", "value": 0},
+        {"name": "Churrasco", "value": -1},
+    ]:
+        assert client.post("/api/ranking-withdrawals", json=payload, headers=auth).status_code == 422
+    assert client.get("/api/financial").json()["ranking_withdrawals"] == []
+
+
 def test_financial_caixa_includes_round_buyin(client, auth, player, current_round):
     client.put("/api/config",
                json={"buyin_value": 100.0, "rebuy_value": 80.0, "addon_value": 50.0, "tournament_name": "T",

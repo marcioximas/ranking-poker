@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
 from ..dependencies import require_admin
-from ..models import Financial, Expense, Config, Round, RoundPlayer
+from ..models import Financial, Expense, Config, Round, RoundPlayer, RankingWithdrawal
 from ..schemas import (
     FinancialRead, FinancialUpdate, FinancialSummary,
     ExpenseRead, ExpenseCreate, ExpenseUpdate, RoundCaixaContribution,
+    RankingWithdrawalCreate, RankingWithdrawalRead,
 )
 
 router = APIRouter(tags=["Financeiro"])
@@ -127,14 +128,16 @@ def get_financial(db: Session = Depends(get_db)):
         historico_ranking += base_hist * RANKING_PCT_FIXED
 
     total_despesas = sum(e.value for e in db.query(Expense).all())
+    withdrawals = db.query(RankingWithdrawal).order_by(RankingWithdrawal.id).all()
+    total_withdrawals = sum(w.value for w in withdrawals)
     caixa_anterior = (fin.caixa_anterior or 0.0) + historico_caixa_anterior
     ranking_anterior = (fin.ranking_anterior or 0.0) + historico_ranking
 
     # Rodada fechada já está assentada no acumulado; só soma o pote da "noite"
     # de novo enquanto a rodada ainda estiver aberta (senão duplica o valor).
     caixa_total = caixa_anterior + caixa_noite - total_despesas
-    # ranking_noite nunca está incluído em ranking_anterior, então soma sempre.
-    ranking_total = ranking_anterior + ranking_noite
+    # O saldo do ranking já inclui as retiradas, sem afetar o caixa.
+    ranking_total = ranking_anterior + ranking_noite - total_withdrawals
     return FinancialSummary(
         caixa_anterior=caixa_anterior,
         ranking_anterior=ranking_anterior,
@@ -151,6 +154,8 @@ def get_financial(db: Session = Depends(get_db)):
         premiacao_2=premiacao_total * 0.3,
         ranking_noite=ranking_noite,
         ranking_total=ranking_total,
+        ranking_withdrawals=withdrawals,
+        total_ranking_withdrawals=total_withdrawals,
         total_despesas=total_despesas,
         rounds_caixa=rounds_caixa,
     )
@@ -167,6 +172,22 @@ def update_financial(data: FinancialUpdate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(fin)
     return fin
+
+
+@router.post("/ranking-withdrawals", response_model=RankingWithdrawalRead, status_code=201,
+             summary="Registrar retirada do ranking",
+             dependencies=[Depends(require_admin)])
+def create_ranking_withdrawal(data: RankingWithdrawalCreate, db: Session = Depends(get_db)):
+    name = data.name.strip()
+    if not name:
+        raise HTTPException(422, "Informe o nome da retirada.")
+    if db.query(RankingWithdrawal).filter(RankingWithdrawal.name == name).first():
+        raise HTTPException(409, f"Retirada '{name}' já existe.")
+    withdrawal = RankingWithdrawal(name=name, value=data.value)
+    db.add(withdrawal)
+    db.commit()
+    db.refresh(withdrawal)
+    return withdrawal
 
 
 # ── Expenses ────────────────────────────────────────────────────────────────

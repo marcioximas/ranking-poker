@@ -95,3 +95,11 @@ class Expense(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
     value = Column(Float, default=0.0)
+
+
+class RankingWithdrawal(Base):
+    __tablename__ = "ranking_withdrawals"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True, nullable=False)
+    value = Column(Float, nullable=False)

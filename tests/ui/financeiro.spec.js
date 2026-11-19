@@ -26,6 +26,28 @@ async function cleanupExpense(name) {
 }
 
 test.describe('Financeiro', () => {
+  test('exibe retirada do ranking sem confundir com despesas do caixa', async ({ page }) => {
+    await page.route('**/api/financial', async route => {
+      const response = await route.fetch()
+      const summary = await response.json()
+      await route.fulfill({
+        response,
+        json: {
+          ...summary,
+          ranking_withdrawals: [{ id: 1, name: 'Churrasco', value: 100 }],
+          total_ranking_withdrawals: 100,
+          ranking_total: 400,
+        },
+      })
+    })
+    const app = new AppPage(page)
+    await app.goto()
+    await app.nav.financeiro.click()
+    const withdrawal = page.locator('.fin-row').filter({ hasText: 'Retirada: Churrasco' })
+    await expect(withdrawal).toContainText('- R$ 100,00')
+    await expect(page.locator('.fin-row').filter({ hasText: 'Ranking total' })).toContainText('R$ 400,00')
+  })
+
   test('exibe premiação após o resumo da rodada e antes do caixa', async ({ page }) => {
     const app = new AppPage(page)
     await app.goto()

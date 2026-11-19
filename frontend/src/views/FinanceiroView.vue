@@ -88,6 +88,10 @@
         <p class="fin-section-title">RESUMO FINANCEIRO DO RANKING</p>
         <div class="fin-row"><span class="fin-lbl">Ranking noite</span>           <span class="fin-val">{{ brl(summary.ranking_noite) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Ranking anterior</span>        <span class="fin-val">{{ brl(summary.ranking_anterior) }}</span></div>
+        <div v-for="withdrawal in summary.ranking_withdrawals" :key="withdrawal.id" class="fin-row">
+          <span class="fin-lbl">Retirada: {{ withdrawal.name }}</span>
+          <span class="fin-val red">- {{ brl(withdrawal.value) }}</span>
+        </div>
         <div class="fin-row"><span class="fin-lbl">Ranking total</span>           <span class="fin-val gold">{{ brl(summary.ranking_total) }}</span></div>
       </div>
     </div>

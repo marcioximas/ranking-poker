@@ -171,6 +171,20 @@ class RoundCaixaContribution(BaseModel):
     caixa_contribution: float
 
 
+class RankingWithdrawalCreate(BaseModel):
+    name: str = Field(..., min_length=1)
+    value: float = Field(..., gt=0, allow_inf_nan=False)
+
+
+class RankingWithdrawalRead(BaseModel):
+    id: int
+    name: str
+    value: float
+
+    class Config:
+        from_attributes = True
+
+
 class FinancialSummary(BaseModel):
     caixa_anterior: float
     ranking_anterior: float
@@ -187,6 +201,8 @@ class FinancialSummary(BaseModel):
     premiacao_2: float
     ranking_noite: float
     ranking_total: float
+    ranking_withdrawals: List[RankingWithdrawalRead] = []
+    total_ranking_withdrawals: float = 0.0
     total_despesas: float
     rounds_caixa: List[RoundCaixaContribution] = []
 
