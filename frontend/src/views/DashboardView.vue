@@ -41,6 +41,21 @@
 
       <div class="section-header">
         <div>
+          <p class="eyebrow">MEMÓRIAS DA MESA</p>
+          <h2>Resenhas recorrentes</h2>
+        </div>
+      </div>
+      <p class="jokes-note">Assuntos que voltaram ao longo do histórico, resumidos sem dados de contato.</p>
+      <div class="facts-grid">
+        <article v-for="story in stories" :key="story.title" class="fact-card chat-story">
+          <span class="fact-icon" aria-hidden="true">{{ story.icon }}</span>
+          <p class="fact-title">{{ story.title }}</p>
+          <p class="fact-names">{{ story.description }}</p>
+        </article>
+      </div>
+
+      <div class="section-header">
+        <div>
           <p class="eyebrow">RESENHA DA MESA</p>
           <h2>Estatísticas da zoeira</h2>
         </div>
@@ -133,6 +148,14 @@ const players = computed(() => {
 
 const totalRebuys = computed(() => players.value.reduce((sum, player) => sum + player.rebuys, 0))
 const totalAddons = computed(() => players.value.reduce((sum, player) => sum + player.addons, 0))
+
+const stories = [
+  { icon: '🍕', title: 'Quem paga a pizza?', description: 'Gustavo China voltou várias vezes à pergunta que não quer calar: quem vai pagar a pizza?' },
+  { icon: '⚽', title: 'O Vasco do Joel', description: 'Joel Felipe e o grupo voltaram muitas vezes ao assunto Vasco, entre apostas, esperança e zoeira.' },
+  { icon: '🥤', title: 'A Coca da mesa', description: 'André Yuji pediu Coca Zero e depois sugeriu revezar quem leva o refrigerante.' },
+  { icon: '💬', title: 'Falinhas garantidas', description: 'As falinhas apareceram em vários dias; Joel Felipe até prometeu levá-las para a mesa.' },
+  { icon: '🃏', title: 'Blefe em debate', description: 'Deivid foi chamado para explicar uma mão, e Matheus Morais lembrou de um blefe que não passou.' },
+]
 
 function leader(key, singular, plural) {
   const highest = Math.max(0, ...players.value.map(player => player[key]))
