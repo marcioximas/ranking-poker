@@ -51,6 +51,8 @@ test('mostra totais e curiosidades de rodadas finalizadas, incluindo empates', a
   await expect(page.locator('.chat-story').filter({ hasText: 'O Vasco do Joel' })).toContainText('Joel Felipe')
   await expect(page.locator('.chat-story').filter({ hasText: 'A Coca da mesa' })).toContainText('André Yuji')
   await expect(page.locator('.chat-story').filter({ hasText: 'Falinhas garantidas' })).toContainText('Joel Felipe')
+  await expect(page.locator('.chat-story').filter({ hasText: 'Operação desodorante' })).toContainText('Joel Felipe')
+  await expect(page.locator('.chat-story').filter({ hasText: 'Operação desodorante' })).toContainText('Matheus Riacho')
   await expect(page.locator('.chat-story').filter({ hasText: 'Blefe em debate' })).toContainText('Deivid')
   await expect(page.locator('.chat-story').filter({ hasText: 'Blefe em debate' })).toContainText('Matheus Morais')
   await expect(page.getByText('Números inventados para brincar, não são registros reais.')).toBeVisible()

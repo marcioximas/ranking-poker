@@ -45,7 +45,7 @@
           <h2>Resenhas recorrentes</h2>
         </div>
       </div>
-      <p class="jokes-note">Assuntos que voltaram ao longo do histórico, resumidos sem dados de contato.</p>
+      <p class="jokes-note">Inspirado no chat do grupo: os fatos são reais, o tempero é por conta da resenha.</p>
       <div class="facts-grid">
         <article v-for="story in stories" :key="story.title" class="fact-card chat-story">
           <span class="fact-icon" aria-hidden="true">{{ story.icon }}</span>
@@ -150,11 +150,12 @@ const totalRebuys = computed(() => players.value.reduce((sum, player) => sum + p
 const totalAddons = computed(() => players.value.reduce((sum, player) => sum + player.addons, 0))
 
 const stories = [
-  { icon: '🍕', title: 'Quem paga a pizza?', description: 'Gustavo China voltou várias vezes à pergunta que não quer calar: quem vai pagar a pizza?' },
-  { icon: '⚽', title: 'O Vasco do Joel', description: 'Joel Felipe e o grupo voltaram muitas vezes ao assunto Vasco, entre apostas, esperança e zoeira.' },
-  { icon: '🥤', title: 'A Coca da mesa', description: 'André Yuji pediu Coca Zero e depois sugeriu revezar quem leva o refrigerante.' },
-  { icon: '💬', title: 'Falinhas garantidas', description: 'As falinhas apareceram em vários dias; Joel Felipe até prometeu levá-las para a mesa.' },
-  { icon: '🃏', title: 'Blefe em debate', description: 'Deivid foi chamado para explicar uma mão, e Matheus Morais lembrou de um blefe que não passou.' },
+  { icon: '🍕', title: 'Quem paga a pizza?', description: 'Gustavo China já tinha até escolhido o Deivid para pagar. Ganhar o pote é uma coisa; escapar do fiscal da pizza é outra.' },
+  { icon: '⚽', title: 'O Vasco do Joel', description: 'Joel Felipe confessou que o Vasco desestabiliza a cabeça. Tem bad beat que começa muito antes do flop.' },
+  { icon: '🥤', title: 'A Coca da mesa', description: 'André Yuji pediu Coca Zero e sugeriu revezamento. Danilo avisou: não basta levar, tem que estar gelada!' },
+  { icon: '💬', title: 'Falinhas garantidas', description: 'Joel Felipe confirmou presença com falinhas. O all-in pode até esperar; o comentário sobre a jogada, não.' },
+  { icon: '🧴', title: 'Operação desodorante', description: 'Joel Felipe se ofereceu para pagar o desodorante, e Matheus Riacho disse que levava o perfume. Se depender da resenha, o kit perfumaria está garantido!' },
+  { icon: '🃏', title: 'Blefe em debate', description: 'Deivid foi chamado para explicar uma mão; Matheus Morais ficou no “se meu blefe passa...”. O jogo acaba, a análise não.' },
 ]
 
 function leader(key, singular, plural) {
