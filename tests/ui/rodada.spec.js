@@ -164,6 +164,58 @@ test.describe('Rodada Atual', () => {
     }
   })
 
+  test('campos numéricos vazios exibem validação ao adicionar jogador', async ({ page }) => {
+    const api = await request.newContext()
+    const name = `Jogador valida campos ${Date.now()}`
+    const playerId = await ensurePlayer(api, name, 'pix-teste-validacao')
+    const roundRes = await api.post(`${API}/rounds/current`, {
+      data: { label: 'Rodada valida campos' },
+      headers: { 'X-Admin-Password': ADMIN_PASSWORD },
+    })
+    expect(roundRes.ok()).toBeTruthy()
+    const roundId = (await roundRes.json()).id
+
+    try {
+      await page.reload()
+      await page.getByRole('button', { name: '+ Adicionar Jogador' }).click()
+      await page.getByPlaceholder('Nome do jogador').fill(name)
+      const inputs = [
+        ['Buy-in', 'Buy-in'],
+        ['Rebuy', 'Rebuy'],
+        ['Addons', 'Addons'],
+        ['Bônus ITM', 'Bônus ITM'],
+        ['Indicação (pts)', 'Indicação (pts)'],
+      ]
+      for (const [label, field] of inputs) {
+        const input = page.locator('.field').filter({ has: page.locator('label', { hasText: label }) }).locator('input')
+        const previous = await input.inputValue()
+        await input.fill('')
+        await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
+        await expect(page.getByText(`${field} deve ser um número inteiro maior ou igual a zero.`)).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Novo Jogador' })).toBeVisible()
+        await input.fill(previous)
+      }
+
+      await page.route(`**/api/rounds/${roundId}/players`, async route => {
+        await route.fulfill({
+          status: 422,
+          json: { detail: [{ msg: 'Valor inválido no servidor.' }] },
+        })
+      }, { times: 1 })
+      await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
+      await openAuthAndSubmit(page)
+      await expect(page.getByText('Valor inválido no servidor.')).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Novo Jogador' })).toBeVisible()
+      await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
+      await expect(page.getByRole('heading', { name: 'Novo Jogador' })).not.toBeVisible()
+      await expect(page.locator('tbody tr').filter({ hasText: name })).toBeVisible()
+    } finally {
+      await api.delete(`${API}/rounds/${roundId}`, { headers: { 'X-Admin-Password': ADMIN_PASSWORD } })
+      await api.delete(`${API}/players/${playerId}`, { headers: { 'X-Admin-Password': ADMIN_PASSWORD } })
+      await api.dispose()
+    }
+  })
+
   test('ao trancar rodada gera PIX de cobrança para todos os jogadores no admin configurado', async ({ page }) => {
     const api = await request.newContext()
     await deleteCurrentRound(api)

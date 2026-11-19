@@ -73,16 +73,16 @@
         <div class="fin-row"><span class="fin-lbl">Premiação (85%)</span><span class="fin-val gold">{{ brl(summary.premiacao_total) }}</span></div>
 
         <br>
+        <p class="fin-section-title">PREMIAÇÃO DA NOITE</p>
+        <div class="fin-row"><span class="fin-lbl">🥇 1º lugar (70%)</span><span class="fin-val gold">{{ brl(summary.premiacao_1) }}</span></div>
+        <div class="fin-row"><span class="fin-lbl">🥈 2º lugar (30%)</span><span class="fin-val">{{ brl(summary.premiacao_2) }}</span></div>
+
+        <br>
         <p class="fin-section-title">RESUMO FINANCEIRO DO CAIXA</p>
         <div class="fin-row"><span class="fin-lbl">Caixa da noite</span> <span class="fin-val green">{{ brl(summary.caixa_noite) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa anterior</span> <span class="fin-val">{{ brl(summary.caixa_anterior) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Despesas</span> <span class="fin-val red">- {{ brl(summary.total_despesas) }}</span></div>
         <div class="fin-row"><span class="fin-lbl">Caixa após despesas</span> <span class="fin-val gold">{{ brl(summary.caixa_total) }}</span></div>
-
-        <br>
-        <p class="fin-section-title">PREMIAÇÃO DA NOITE</p>
-        <div class="fin-row"><span class="fin-lbl">🥇 1º lugar (70%)</span><span class="fin-val gold">{{ brl(summary.premiacao_1) }}</span></div>
-        <div class="fin-row"><span class="fin-lbl">🥈 2º lugar (30%)</span><span class="fin-val">{{ brl(summary.premiacao_2) }}</span></div>
 
         <br>
         <p class="fin-section-title">RESUMO FINANCEIRO DO RANKING</p>

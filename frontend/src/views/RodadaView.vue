@@ -796,15 +796,24 @@ async function doSavePlayer() {
     return
   }
   if (!form.value.name.trim()) { formError.value = 'Nome é obrigatório.'; return }
-  if ((form.value.buyin || 0) > 1 || (form.value.buyin || 0) < 0) {
+  const numericFields = [
+    ['buyin', 'Buy-in'],
+    ['rebuy', 'Rebuy'],
+    ['addon', 'Addons'],
+    ['bonus', 'Bônus ITM'],
+    ['indicacao', 'Indicação (pts)'],
+  ]
+  for (const [key, label] of numericFields) {
+    if (!Number.isInteger(form.value[key]) || form.value[key] < 0) {
+      formError.value = `${label} deve ser um número inteiro maior ou igual a zero.`
+      return
+    }
+  }
+  if (form.value.buyin > 1) {
     formError.value = 'Buy-in deve ser 0 ou 1.'
     return
   }
-  if ((form.value.rebuy || 0) < 0) {
-    formError.value = 'Rebuy não pode ser negativo.'
-    return
-  }
-  if ((form.value.rebuy || 0) > 0 && (form.value.buyin || 0) === 0) {
+  if (form.value.rebuy > 0 && form.value.buyin === 0) {
     formError.value = 'Defina Buy-in = 1 para registrar rebuys.'
     return
   }
@@ -857,7 +866,8 @@ async function doSavePlayer() {
       }
       showPlayerModal.value = false
     } catch (e) {
-      formError.value = e.response?.data?.detail || 'Erro ao salvar.'
+      const detail = e.response?.data?.detail
+      formError.value = Array.isArray(detail) ? detail.map(d => d.msg).join('; ') : detail || 'Erro ao salvar.'
     } finally {
       saving.value = false
     }

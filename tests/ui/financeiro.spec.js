@@ -26,6 +26,20 @@ async function cleanupExpense(name) {
 }
 
 test.describe('Financeiro', () => {
+  test('exibe premiação após o resumo da rodada e antes do caixa', async ({ page }) => {
+    const app = new AppPage(page)
+    await app.goto()
+    await app.nav.financeiro.click()
+    const sections = page.locator('.fin-section-title').filter({
+      hasText: /^(RESUMO FINANCEIRO DA RODADA|PREMIAÇÃO DA NOITE|RESUMO FINANCEIRO DO CAIXA)$/,
+    })
+    await expect(sections).toHaveText([
+      'RESUMO FINANCEIRO DA RODADA',
+      'PREMIAÇÃO DA NOITE',
+      'RESUMO FINANCEIRO DO CAIXA',
+    ])
+  })
+
   test('acessa a aba sem autenticação inicial', async ({ page }) => {
     const app = new AppPage(page)
     await app.goto()
