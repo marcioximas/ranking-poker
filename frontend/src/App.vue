@@ -8,6 +8,7 @@
   </header>
 
   <nav>
+    <button :class="{ active: tab === 'dashboard' }"  @click="setTab('dashboard')">Dashboard</button>
     <button :class="{ active: tab === 'rodada' }"     @click="setTab('rodada')">Rodada Atual</button>
     <button :class="{ active: tab === 'ranking' }"    @click="setTab('ranking')">Ranking Semestral</button>
     <button :class="{ active: tab === 'jogadores' }"  @click="setTab('jogadores')">Jogadores</button>
@@ -16,7 +17,8 @@
   </nav>
 
   <main>
-    <RodadaView     v-if="tab === 'rodada'" />
+    <DashboardView  v-if="tab === 'dashboard'" />
+    <RodadaView     v-else-if="tab === 'rodada'" />
     <RankingView    v-else-if="tab === 'ranking'" />
     <JogadoresView  v-else-if="tab === 'jogadores'" />
     <FinanceiroView v-else-if="tab === 'financeiro'" />
@@ -60,6 +62,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import BaseModal      from './components/BaseModal.vue'
+import DashboardView  from './views/DashboardView.vue'
 import RodadaView     from './views/RodadaView.vue'
 import RankingView    from './views/RankingView.vue'
 import JogadoresView  from './views/JogadoresView.vue'
